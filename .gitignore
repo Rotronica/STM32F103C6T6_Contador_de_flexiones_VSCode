@@ -1,0 +1,7 @@
+build
+mx.scratch
+!.settings
+# Archivos a descartar 
+.settings
+.vscode
+build
