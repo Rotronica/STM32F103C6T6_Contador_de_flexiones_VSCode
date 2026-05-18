@@ -48,14 +48,13 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     MyLib/src/board_init.c
     MyLib/src/Display7seg.c
     MyLib/src/time_ticks.c
-
-
+    MyLib/src/VL53L0X.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
-    MyLib/inc 
+    MyLib/inc
 )
 
 # Add project symbols (macros)

@@ -25,9 +25,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "board_init.h" //Libreria creado para la configuracion de pines del proyecto
-#include <stdbool.h>
 #include "time_ticks.h"
 #include "Display7seg.h"
+#include "VL53L0X.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -96,20 +96,67 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2); // Activa la interrupcion del TMR2
   hardware_init();               // inicializa los pines display,buzzer y button
   Display7seg_init();
+
+  // Inicializar sensor
+  static VL53L0X_t sensor;
+
+  Display7_show_number(100);
+
+  bool init_ok = VL53L0X_Init(&sensor, &hi2c1, true);
+
+  if (init_ok)
+  {
+    Display7_show_number(111);
+  }
+  else
+  {
+    Display7_show_number(999);
+  }
+
+  uint32_t wait = millis();
+  while ((millis() - wait) < 2000)
+  {
+    Display_refresh();
+  }
+
+  VL53L0X_SetTimeout(&sensor, 100);
+
+  uint32_t last_measurement = 0;
+  uint16_t distance = 0;
+  bool measuring = false;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-    /* USER CODE BEGIN 3 */
-    Display7_show_number(3);
     Display_refresh();
-  }
-  /* USER CODE END 3 */
-}
 
+    if (!measuring && tick_espera(&last_measurement, 100))
+    {
+      VL53L0X_StartMeasurement(&sensor);
+      measuring = true;
+    }
+
+    if (measuring && VL53L0X_IsReady(&sensor))
+    {
+      if (VL53L0X_TimeoutOccurred(&sensor))
+      {
+        Display7_show_number(888);
+      }
+      else
+      {
+        distance = VL53L0X_GetDistance(&sensor);
+        if (distance > 20 && distance < 1200)
+        {
+          Display7_show_number(distance);
+        }
+      }
+      measuring = false;
+    }
+    /* USER CODE END 3 */
+  }
+}
 /**
  * @brief System Clock Configuration
  * @retval None

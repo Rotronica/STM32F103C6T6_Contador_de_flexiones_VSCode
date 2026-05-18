@@ -1,4 +1,5 @@
 #pragma once
 #include <stdint.h>
-#include "tim.h"
-uint8_t tick_espera(uint32_t *referencia, uint32_t intervalo_ms);
+#include <stdbool.h>
+bool tick_espera(uint32_t *referencia, uint32_t intervalo_ms);
+uint32_t millis(void);
