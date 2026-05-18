@@ -1,6 +1,7 @@
 #include "Display7seg.h"
 #include "board_init.h"
 #include "time_ticks.h"
+#include <string.h>
 
 static uint32_t tick_save = 0;
 static uint8_t display_buffer[NUM_DISPLAY];
@@ -19,7 +20,66 @@ static const uint8_t tabla_segmentos[] = {
     0x07,
     0x7F,
     0x6F,
-};
+    // Letras A-Z
+    0x77, // A
+    0x7C, // B
+    0x39, // C
+    0x5E, // D
+    0x79, // E
+    0x71, // F
+    0x3D, // G
+    0x76, // H
+    0x30, // I
+    0x1E, // J
+    0x76, // K
+    0x38, // L
+    0x37, // M
+    0x54, // N
+    0x5C, // O
+    0x73, // P
+    0x67, // Q
+    0x50, // R
+    0x6D, // S
+    0x78, // T
+    0x3E, // U
+    0x3E, // V
+    0x2A, // W
+    0x76, // X
+    0x6E, // Y
+    0x5B, // Z
+
+    // Apagado
+    0x00};
+typedef enum
+{
+    _A = 10,
+    _B = 11,
+    _C = 12,
+    _D,
+    _E,
+    _F,
+    _G,
+    _H,
+    _I,
+    _J,
+    _K,
+    _L,
+    _M,
+    _N,
+    _O,
+    _P,
+    _Q,
+    _R,
+    _S,
+    _T,
+    _U,
+    _V,
+    _W,
+    _X,
+    _Y,
+    _Z,
+    _VACIO
+} abc_t;
 // Prototipo de funcion
 void escribir_segmento(uint8_t valor);
 
@@ -55,7 +115,7 @@ void escribir_segmento(uint8_t valor)
     if (valor & 0x40)
         HAL_GPIO_WritePin(GPIOA, PIN_A7, GPIO_PIN_SET); // G
 }
-void Display_refresh(void)
+void Display7seg_refresh(void)
 {
     if (tick_espera(&tick_save, TIME_MUX))
     {
@@ -82,7 +142,7 @@ void Display_refresh(void)
     }
 }
 // Mostrar un número en el display (actualiza el buffer)
-void Display7_show_number(uint16_t numero)
+void Display7seg_show_number(uint16_t numero)
 {
     if (numero > 999)
         numero = 999;
@@ -113,5 +173,49 @@ void Display7_show_number(uint16_t numero)
         display_buffer[0] = tabla_segmentos[numero]; // Unidades
         display_buffer[1] = 0x00;                    // Apagar decenas
         display_buffer[2] = 0x00;                    // Apagar centenas
+    }
+}
+void Display7seg_show_text(const char *texto)
+{
+    // Limpiar buffer
+    display_buffer[0] = 0x00;
+    display_buffer[1] = 0x00;
+    display_buffer[2] = 0x00;
+
+    if (strcmp(texto, "start") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_R];
+        display_buffer[1] = tabla_segmentos[_T];
+        display_buffer[0] = tabla_segmentos[_S];
+    }
+    else if (strcmp(texto, "reset") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_T];
+        display_buffer[1] = tabla_segmentos[_S];
+        display_buffer[0] = tabla_segmentos[_R];
+    }
+    else if (strcmp(texto, "obj") == 0 || strcmp(texto, "objetivo") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_O];
+        display_buffer[1] = tabla_segmentos[_B];
+        display_buffer[0] = tabla_segmentos[_J];
+    }
+    else if (strcmp(texto, "umb") == 0 || strcmp(texto, "umbral") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_U];
+        display_buffer[1] = tabla_segmentos[_M];
+        display_buffer[0] = tabla_segmentos[_B];
+    }
+    else if (strcmp(texto, "arriba") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_A];
+        display_buffer[1] = tabla_segmentos[_R];
+        display_buffer[0] = tabla_segmentos[_R];
+    }
+    else if (strcmp(texto, "abajo") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_A];
+        display_buffer[1] = tabla_segmentos[_B];
+        display_buffer[0] = tabla_segmentos[_J];
     }
 }

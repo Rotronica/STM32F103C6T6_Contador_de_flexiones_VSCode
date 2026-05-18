@@ -28,6 +28,8 @@
 #include "time_ticks.h"
 #include "Display7seg.h"
 #include "VL53L0X.h"
+#include "buzzer.h"
+#include "flexiones.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,64 +97,59 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2); // Activa la interrupcion del TMR2
   hardware_init();               // inicializa los pines display,buzzer y button
+  buzzer_init();
+  flexiones_init();
   Display7seg_init();
 
   // Inicializar sensor
   static VL53L0X_t sensor;
 
-  Display7_show_number(100);
+  Display7seg_show_number(100);
 
   bool init_ok = VL53L0X_Init(&sensor, &hi2c1, true);
 
   if (init_ok)
   {
-    Display7_show_number(111);
+    Display7seg_show_text("objetivo");
   }
   else
   {
-    Display7_show_number(999);
+    Display7seg_show_number(999);
   }
 
   uint32_t wait = millis();
   while ((millis() - wait) < 2000)
   {
-    Display_refresh();
+    Display7seg_refresh();
   }
 
   VL53L0X_SetTimeout(&sensor, 100);
 
-  uint32_t last_measurement = 0;
   uint16_t distance = 0;
-  bool measuring = false;
+  uint16_t contador = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    Display_refresh();
+    Display7seg_refresh();
+    buzzer_update();
 
-    if (!measuring && tick_espera(&last_measurement, 100))
-    {
-      VL53L0X_StartMeasurement(&sensor);
-      measuring = true;
-    }
+    VL53L0X_StartMeasurement(&sensor, 100); // inicia la medicion
 
-    if (measuring && VL53L0X_IsReady(&sensor))
+    if (VL53L0X_IsReady(&sensor))
     {
       if (VL53L0X_TimeoutOccurred(&sensor))
       {
-        Display7_show_number(888);
+        Display7seg_show_number(888); // Medicion expiro por timeout
       }
       else
       {
         distance = VL53L0X_GetDistance(&sensor);
-        if (distance > 20 && distance < 1200)
-        {
-          Display7_show_number(distance);
-        }
+        contador = flexiones_actualizar(distance, 50, 300);
+        Display7seg_show_number(distance);
       }
-      measuring = false;
     }
     /* USER CODE END 3 */
   }

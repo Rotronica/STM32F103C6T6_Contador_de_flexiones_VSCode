@@ -49,6 +49,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     MyLib/src/Display7seg.c
     MyLib/src/time_ticks.c
     MyLib/src/VL53L0X.c
+    MyLib/src/buzzer.c
+    MyLib/src/flexiones.c
 )
 
 # Add include paths

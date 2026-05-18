@@ -33,6 +33,8 @@
 #define ALGO_PHASECAL_CONFIG_TIMEOUT 0x30
 #define ALGO_PHASECAL_LIM 0x30
 
+uint32_t last_measurement = 0;
+
 //============================================================================
 // FUNCIONES I2C PRIVADAS
 //============================================================================
@@ -277,22 +279,25 @@ bool VL53L0X_Init(VL53L0X_t *dev, I2C_HandleTypeDef *hi2c, bool io_2v8)
     return true;
 }
 
-void VL53L0X_StartMeasurement(VL53L0X_t *dev)
+void VL53L0X_StartMeasurement(VL53L0X_t *dev, uint16_t time_ms)
 {
-    if (dev->is_measuring)
-        return;
+    if (tick_espera(&last_measurement, time_ms))
+    {
+        if (dev->is_measuring)
+            return;
 
-    write_reg(dev, 0x80, 0x01);
-    write_reg(dev, 0xFF, 0x01);
-    write_reg(dev, 0x00, 0x00);
-    write_reg(dev, 0x91, dev->stop_variable);
-    write_reg(dev, 0x00, 0x01);
-    write_reg(dev, 0xFF, 0x00);
-    write_reg(dev, 0x80, 0x00);
-    write_reg(dev, SYSRANGE_START, 0x01);
+        write_reg(dev, 0x80, 0x01);
+        write_reg(dev, 0xFF, 0x01);
+        write_reg(dev, 0x00, 0x00);
+        write_reg(dev, 0x91, dev->stop_variable);
+        write_reg(dev, 0x00, 0x01);
+        write_reg(dev, 0xFF, 0x00);
+        write_reg(dev, 0x80, 0x00);
+        write_reg(dev, SYSRANGE_START, 0x01);
 
-    dev->measurement_start_time = millis();
-    dev->is_measuring = true;
+        dev->measurement_start_time = millis();
+        dev->is_measuring = true;
+    }
 }
 
 bool VL53L0X_IsReady(VL53L0X_t *dev)
