@@ -2,6 +2,8 @@
 #include "button.h"
 #include "buzzer.h"
 #include "Display7seg.h"
+#define NUM_FRAMES 14
+
 void menu_init(menu_t *menu,
                button_handle_t btn_start,
                button_handle_t btn_up,
@@ -23,7 +25,9 @@ void menu_init(menu_t *menu,
     menu->objetivo = objetivo;
     menu->umbral_abajo = umbral_abajo;
     menu->umbral_arriba = umbral_arriba;
-
+    // Variables para la animacion de espera
+    menu->last_animation = 0;
+    menu->animation_frame = 0;
     // Condion inicial del contador si esta activado
     menu->start_contador = false;
     // Condicion inicial para el reset del contador
@@ -31,11 +35,17 @@ void menu_init(menu_t *menu,
 }
 void menu_update(menu_t *menu)
 {
-    static uint8_t selec_1 = 0; // Variable para seleccionar las dos opciones
-
+    uint32_t ahora = millis();
     switch (menu->estado)
     {
     case MODO_ESPERA:
+        // Actualizar animación cada
+        // Tiempo del frame 100ms
+        if (ahora - menu->last_animation >= 100)
+        {
+            menu->last_animation = ahora;
+            menu->animation_frame = (menu->animation_frame + 1) % NUM_FRAMES;
+        }
         // 1. Verificar presión larga (entra a configuración)
         // Variables estáticas para detección manual
         static bool estaba_presionado = false;
@@ -55,12 +65,13 @@ void menu_update(menu_t *menu)
         {
             uint32_t duracion = millis() - inicio_presion;
             estaba_presionado = false;
-
+            // Entrar a modo configuracion
             if (duracion >= 1000)
             {
                 menu->estado = MODO_CONFIGURACION;
                 buzzer_start(100);
             }
+            // Entrar a modo conteo
             else if (duracion >= 50)
             {
                 menu->estado = MODO_CONTEO;
@@ -74,29 +85,42 @@ void menu_update(menu_t *menu)
         // Resetear contador
         if (button_pressed(menu->btn_reset))
         {
+            buzzer_start(100);
             menu->reset_contador = true;
         }
         // ir atras, se tien que presionar unos segundos mas
         if (button_long_pressed(menu->btn_reset))
         {
+            buzzer_start(300);
             menu->estado = MODO_ESPERA;
         }
 
         break;
     case MODO_CONFIGURACION:
         // Seleccion de las opciones
-        if (button_released(menu->btn_down) || button_released(menu->btn_up))
+        if (button_released(menu->btn_up))
         {
             buzzer_start(50);
-            if (selec_1 == 0)
+            if (menu->modo_config >= OPCION_UMBRAL)
             {
-                menu->modo_config = OPCION_OBJETIVOS;
+                menu->modo_config--;
+                if (menu->modo_config < 0)
+                {
+                    menu->modo_config = 0;
+                }
             }
-            else if (selec_1 == 1)
+        }
+        if (button_released(menu->btn_down))
+        {
+            buzzer_start(50);
+            if (menu->modo_config <= OPCION_OBJETIVOS)
             {
-                menu->modo_config = OPCION_UMBRAL;
+                menu->modo_config++;
+                if (menu->modo_config > OPCION_UMBRAL)
+                {
+                    menu->modo_config = OPCION_UMBRAL;
+                }
             }
-            selec_1 = (selec_1 + 1) % 2;
         }
         // ir atras, se tien que presionar unos segundos mas
         if (button_long_pressed(menu->btn_reset))
@@ -104,7 +128,6 @@ void menu_update(menu_t *menu)
             buzzer_start(200);
             menu->estado = MODO_ESPERA;
             menu->modo_config = OPCION_OBJETIVOS;
-            selec_1 = 0;
         }
 
         break;
@@ -135,7 +158,55 @@ void menu_update_display(menu_t *menu)
     switch (menu->estado)
     {
     case MODO_ESPERA:
-        Display7seg_show_text("inicio");
+        // Animación de espera (mostrar diferentes patrones)
+        switch (menu->animation_frame)
+        {
+        case 0:
+            Display7seg_show_text("secuencia1");
+            break;
+        case 1:
+            Display7seg_show_text("secuencia2");
+            break;
+        case 2:
+            Display7seg_show_text("secuencia3");
+            break;
+        case 3:
+            Display7seg_show_text("secuencia4");
+            break;
+        case 4:
+            Display7seg_show_text("secuencia5");
+            break;
+        case 5:
+            Display7seg_show_text("secuencia6");
+            break;
+        case 6:
+            Display7seg_show_text("secuencia7");
+            break;
+        case 7:
+            Display7seg_show_text("secuencia8");
+            break;
+        case 8:
+            Display7seg_show_text("secuencia9");
+            break;
+        case 9:
+            Display7seg_show_text("secuencia10");
+            break;
+        case 10:
+            Display7seg_show_text("secuencia11");
+            break;
+        case 11:
+            Display7seg_show_text("secuencia12");
+            break;
+        case 12:
+            Display7seg_show_text("secuencia13");
+            break;
+        case 13:
+            Display7seg_show_text("secuencia14");
+            break;
+        default:
+            Display7seg_show_number(0);
+            break;
+        }
         break;
     case MODO_CONTEO:
         // El contado se visualiza desde el main

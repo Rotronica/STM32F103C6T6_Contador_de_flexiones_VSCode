@@ -1,6 +1,7 @@
 #include "Display7seg.h"
 #include "board_init.h"
 #include "time_ticks.h"
+#include "frames.h"
 #include <string.h>
 
 static uint32_t tick_save = 0;
@@ -222,10 +223,89 @@ void Display7seg_show_text(const char *texto)
         display_buffer[1] = tabla_segmentos[_W];
         display_buffer[0] = tabla_segmentos[_N];
     }
-    else if (strcmp(texto, "ooo") == 0)
+    // Desde aqui se muestran los frames de la primera animacion
+    else if (strcmp(texto, "secuencia1") == 0)
     {
-        display_buffer[2] = tabla_segmentos[_O];
-        display_buffer[1] = tabla_segmentos[_O];
-        display_buffer[0] = tabla_segmentos[_O];
+        display_buffer[2] = frame_1[0];
+        display_buffer[1] = frame_1[1];
+        display_buffer[0] = frame_1[2];
+    }
+    else if (strcmp(texto, "secuencia2") == 0)
+    {
+        display_buffer[2] = frame_2[0];
+        display_buffer[1] = frame_2[1];
+        display_buffer[0] = frame_2[2];
+    }
+    else if (strcmp(texto, "secuencia3") == 0)
+    {
+        display_buffer[2] = frame_3[0];
+        display_buffer[1] = frame_3[1];
+        display_buffer[0] = frame_3[2];
+    }
+    else if (strcmp(texto, "secuencia4") == 0)
+    {
+        display_buffer[2] = frame_4[0];
+        display_buffer[1] = frame_4[1];
+        display_buffer[0] = frame_4[2];
+    }
+    else if (strcmp(texto, "secuencia5") == 0)
+    {
+        display_buffer[2] = frame_5[0];
+        display_buffer[1] = frame_5[1];
+        display_buffer[0] = frame_5[2];
+    }
+    else if (strcmp(texto, "secuencia6") == 0)
+    {
+        display_buffer[2] = frame_6[0];
+        display_buffer[1] = frame_6[1];
+        display_buffer[0] = frame_6[2];
+    }
+    else if (strcmp(texto, "secuencia7") == 0)
+    {
+        display_buffer[2] = frame_7[0];
+        display_buffer[1] = frame_7[1];
+        display_buffer[0] = frame_7[2];
+    }
+    else if (strcmp(texto, "secuencia8") == 0)
+    {
+        display_buffer[2] = frame_8[0];
+        display_buffer[1] = frame_8[1];
+        display_buffer[0] = frame_8[2];
+    }
+    else if (strcmp(texto, "secuencia9") == 0)
+    {
+        display_buffer[2] = frame_9[0];
+        display_buffer[1] = frame_9[1];
+        display_buffer[0] = frame_9[2];
+    }
+    else if (strcmp(texto, "secuencia10") == 0)
+    {
+        display_buffer[2] = frame_10[0];
+        display_buffer[1] = frame_10[1];
+        display_buffer[0] = frame_10[2];
+    }
+    else if (strcmp(texto, "secuencia11") == 0)
+    {
+        display_buffer[2] = frame_11[0];
+        display_buffer[1] = frame_11[1];
+        display_buffer[0] = frame_11[2];
+    }
+    else if (strcmp(texto, "secuencia12") == 0)
+    {
+        display_buffer[2] = frame_12[0];
+        display_buffer[1] = frame_12[1];
+        display_buffer[0] = frame_12[2];
+    }
+    else if (strcmp(texto, "secuencia13") == 0)
+    {
+        display_buffer[2] = frame_13[0];
+        display_buffer[1] = frame_13[1];
+        display_buffer[0] = frame_13[2];
+    }
+    else if (strcmp(texto, "secuencia14") == 0)
+    {
+        display_buffer[2] = frame_14[0];
+        display_buffer[1] = frame_14[1];
+        display_buffer[0] = frame_14[2];
     }
 }

@@ -17,7 +17,7 @@
 #define PIN_A5 GPIO_PIN_5
 #define PIN_A6 GPIO_PIN_6
 #define PIN_A7 GPIO_PIN_7
-// Pines de on-off para activar display
+// Pines de on-off para activar display PORT A
 #define DISPLAY_1 GPIO_PIN_12
 #define DISPLAY_2 GPIO_PIN_11
 #define DISPLAY_3 GPIO_PIN_10
@@ -30,7 +30,7 @@
 #define BUTTON_CONF_STR GPIO_PIN_15
 
 /*======Definicion de Buzzer=============*/
-// Buzzer conectado al PORA
+// Buzzer conectado al PORTA
 #define BUZZER_PIN GPIO_PIN_9
 
 /*

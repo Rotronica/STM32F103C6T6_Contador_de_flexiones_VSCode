@@ -40,6 +40,9 @@ typedef struct
     uint16_t objetivo;
     uint16_t umbral_abajo;
     uint16_t umbral_arriba;
+    // Control de animación
+    uint32_t last_animation;
+    uint8_t animation_frame;
 
     // Reset del contador
     bool start_contador;

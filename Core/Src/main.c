@@ -122,7 +122,7 @@ int main(void)
 
   if (init_ok)
   {
-    Display7seg_show_text("ooo");
+    Display7seg_show_text("inicio");
   }
   else
   {
@@ -161,7 +161,6 @@ int main(void)
       if (menu_cont_rst(&menu))
       {
         flexiones_cont_reset();
-        buzzer_start(200);
       }
       VL53L0X_StartMeasurement(&sensor, 100); // inicia la medicion
 
