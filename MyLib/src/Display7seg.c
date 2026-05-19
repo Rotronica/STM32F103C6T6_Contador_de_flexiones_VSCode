@@ -49,7 +49,10 @@ static const uint8_t tabla_segmentos[] = {
     0x5B, // Z
 
     // Apagado
-    0x00};
+    0x00,
+    // Símbolos especiales
+    0x40, //(-)guion
+};
 typedef enum
 {
     _A = 10,
@@ -78,7 +81,8 @@ typedef enum
     _X,
     _Y,
     _Z,
-    _VACIO
+    _VACIO,
+    _GUION,
 } abc_t;
 // Prototipo de funcion
 void escribir_segmento(uint8_t valor);
@@ -182,11 +186,11 @@ void Display7seg_show_text(const char *texto)
     display_buffer[1] = 0x00;
     display_buffer[2] = 0x00;
 
-    if (strcmp(texto, "start") == 0)
+    if (strcmp(texto, "inicio") == 0)
     {
-        display_buffer[2] = tabla_segmentos[_R];
-        display_buffer[1] = tabla_segmentos[_T];
-        display_buffer[0] = tabla_segmentos[_S];
+        display_buffer[2] = tabla_segmentos[_GUION];
+        display_buffer[1] = tabla_segmentos[_GUION];
+        display_buffer[0] = tabla_segmentos[_GUION];
     }
     else if (strcmp(texto, "reset") == 0)
     {
@@ -208,14 +212,20 @@ void Display7seg_show_text(const char *texto)
     }
     else if (strcmp(texto, "arriba") == 0)
     {
-        display_buffer[2] = tabla_segmentos[_A];
-        display_buffer[1] = tabla_segmentos[_R];
-        display_buffer[0] = tabla_segmentos[_R];
+        display_buffer[2] = tabla_segmentos[_VACIO];
+        display_buffer[1] = tabla_segmentos[_U];
+        display_buffer[0] = tabla_segmentos[_P];
     }
     else if (strcmp(texto, "abajo") == 0)
     {
-        display_buffer[2] = tabla_segmentos[_A];
-        display_buffer[1] = tabla_segmentos[_B];
-        display_buffer[0] = tabla_segmentos[_J];
+        display_buffer[2] = tabla_segmentos[_D];
+        display_buffer[1] = tabla_segmentos[_W];
+        display_buffer[0] = tabla_segmentos[_N];
+    }
+    else if (strcmp(texto, "ooo") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_O];
+        display_buffer[1] = tabla_segmentos[_O];
+        display_buffer[0] = tabla_segmentos[_O];
     }
 }

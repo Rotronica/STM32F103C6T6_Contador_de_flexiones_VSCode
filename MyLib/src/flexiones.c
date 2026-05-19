@@ -132,7 +132,7 @@ uint16_t flexiones_actualizar(uint16_t distancia, uint16_t umbral_flexion, uint1
                     // ¡FLEXIÓN COMPLETA!
                     contador++;
                     // Activar buzzer (no bloqueante)
-                    buzzer_start(); // 100ms de pitido
+                    buzzer_start(500); // 500ms de pitido
                     estado = ESTADO_ARRIBA;
                     contador_estable = 0;
                 }
@@ -153,4 +153,8 @@ uint16_t flexiones_actualizar(uint16_t distancia, uint16_t umbral_flexion, uint1
 
     distancia_anterior = distancia;
     return contador;
+}
+void flexiones_cont_reset()
+{
+    contador = 0;
 }

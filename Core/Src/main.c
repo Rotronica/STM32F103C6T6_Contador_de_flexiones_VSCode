@@ -30,6 +30,8 @@
 #include "VL53L0X.h"
 #include "buzzer.h"
 #include "flexiones.h"
+#include "button.h"
+#include "menu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,7 +41,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define UMBRAL_UP 300
+#define UMBRAL_DOWN 70
+#define OBJETIVO_FLEXIONES 25
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,14 +52,15 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
 /* USER CODE BEGIN PV */
+static button_handle_t btn_start, btn_up, btn_down, btn_reset;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+void crear_botones(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -101,6 +106,13 @@ int main(void)
   flexiones_init();
   Display7seg_init();
 
+  // Inicializar botones
+  button_init();
+  crear_botones();
+  // iniciar menu
+  static menu_t menu;
+  menu_init(&menu, btn_start, btn_up, btn_down, btn_reset, OBJETIVO_FLEXIONES, UMBRAL_DOWN, UMBRAL_UP);
+
   // Inicializar sensor
   static VL53L0X_t sensor;
 
@@ -110,7 +122,7 @@ int main(void)
 
   if (init_ok)
   {
-    Display7seg_show_text("objetivo");
+    Display7seg_show_text("ooo");
   }
   else
   {
@@ -133,10 +145,47 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    Display7seg_refresh();
-    buzzer_update();
+    Display7seg_refresh(); // Multiplexado del display
+    button_update_all();   // Actualizar estado de botones
+    buzzer_update();       // Actualizar estado del buzzer
+    menu_update(&menu);    // Actualizar lógica del menú
+    //=====================Modo espera======================
+    if (menu_get_estado(&menu) == MODO_ESPERA)
+    {
+      menu_update_display(&menu);
+    }
+    //===================Modo conteo========================
+    if (menu_get_estado(&menu) == MODO_CONTEO)
+    {
+      // Verificar reset solicitado por el menú
+      if (menu_cont_rst(&menu))
+      {
+        flexiones_cont_reset();
+        buzzer_start(200);
+      }
+      VL53L0X_StartMeasurement(&sensor, 100); // inicia la medicion
 
-    VL53L0X_StartMeasurement(&sensor, 100); // inicia la medicion
+      if (VL53L0X_IsReady(&sensor))
+      {
+        if (VL53L0X_TimeoutOccurred(&sensor))
+        {
+          Display7seg_show_number(888); // Medicion expiro por timeout
+        }
+        else
+        {
+          distance = VL53L0X_GetDistance(&sensor);
+          contador = flexiones_actualizar(distance, 50, 300);
+          Display7seg_show_number(contador);
+        }
+      }
+    }
+    //===========Modo configuracion========================
+    if (menu_get_estado(&menu) == MODO_CONFIGURACION)
+    {
+      menu_update_display(&menu);
+    }
+
+    /*VL53L0X_StartMeasurement(&sensor, 100); // inicia la medicion
 
     if (VL53L0X_IsReady(&sensor))
     {
@@ -150,7 +199,7 @@ int main(void)
         contador = flexiones_actualizar(distance, 50, 300);
         Display7seg_show_number(distance);
       }
-    }
+    }*/
     /* USER CODE END 3 */
   }
 }
@@ -193,6 +242,49 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void crear_botones(void)
+{
+  // Atributos del pulsador start/Configuracion
+  button_config_t btn_start_config = {
+      .pin = BUTTON_CONF_STR,
+      .port = GPIOB,
+      .pull_up = true,
+      .active_low = true,
+      .debounce_ms = 50,
+      .long_press_ms = 1000,
+  };
+  btn_start = button_create(&btn_start_config);
+  // Atributos del boton up
+  button_config_t btn_arriba = {
+      .pin = BUTTON_UP,
+      .port = GPIOB,
+      .pull_up = true,
+      .active_low = true,
+      .debounce_ms = 50,
+      .long_press_ms = 1000,
+  };
+  btn_up = button_create(&btn_arriba);
+  // Atributos del boton down
+  button_config_t btn_abajo = {
+      .pin = BUTTON_DOWN,
+      .port = GPIOB,
+      .pull_up = true,
+      .active_low = true,
+      .debounce_ms = 10,
+      .long_press_ms = 1000,
+  };
+  btn_down = button_create(&btn_abajo);
+  // Atributos del boton Reset/Back
+  button_config_t btn_rst = {
+      .pin = BUTTON_RESET,
+      .port = GPIOB,
+      .pull_up = true,
+      .active_low = true,
+      .debounce_ms = 10,
+      .long_press_ms = 1000,
+  };
+  btn_reset = button_create(&btn_rst);
+}
 /* USER CODE END 4 */
 
 /**

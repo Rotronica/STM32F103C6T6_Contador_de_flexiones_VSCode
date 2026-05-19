@@ -4,19 +4,22 @@
 #include <stdbool.h>
 
 static bool buzzer_activo = false;
-static uint32_t tiempo_buzzer = 0;
+static uint32_t save_time = 0;
+static uint16_t time_buzzer = 500;
 
 void buzzer_init(void)
 {
     buzzer_activo = false;
-    tiempo_buzzer = 0;
+    save_time = 0;
+    time_buzzer = 500;
 }
 
 // Cuando quieras activar el buzzer (ej: al completar una flexión)
-void buzzer_start(void)
+void buzzer_start(uint16_t tiempo_ms)
 {
     buzzer_activo = true;
-    tiempo_buzzer = millis(); // Guardar el momento de inicio
+    time_buzzer = tiempo_ms;
+    save_time = millis(); // Guardar el momento de inicio
     HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_SET);
 }
 
@@ -26,7 +29,7 @@ void buzzer_update(void)
     if (buzzer_activo)
     {
         // Verificar si ya pasaron 2 segundos
-        if (tick_espera(&tiempo_buzzer, TIEMPO_MS))
+        if (tick_espera(&save_time, time_buzzer))
         {
             // ¡Se cumplió el tiempo!
             HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_RESET);

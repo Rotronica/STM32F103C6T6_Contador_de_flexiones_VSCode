@@ -51,6 +51,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     MyLib/src/VL53L0X.c
     MyLib/src/buzzer.c
     MyLib/src/flexiones.c
+    MyLib/src/menu.c
+    MyLib/src/button.c
 )
 
 # Add include paths

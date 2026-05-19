@@ -9,7 +9,7 @@
 #pragma once
 #include "stm32f1xx_hal.h" // ← ESTE ES EL IMPORTANTE (incluye todo)
 /*======Definicion de pines a usar===========*/
-// Pines del Display de 7 segmentos usados
+// Pines del Display de 7 segmentos usados en el PORT A
 #define PIN_A1 GPIO_PIN_1
 #define PIN_A2 GPIO_PIN_2
 #define PIN_A3 GPIO_PIN_3
@@ -23,12 +23,14 @@
 #define DISPLAY_3 GPIO_PIN_10
 
 /*======Definicion de pulsadores=========*/
+// Pusadores conectados al PORTB
 #define BUTTON_RESET GPIO_PIN_12
 #define BUTTON_DOWN GPIO_PIN_13
 #define BUTTON_UP GPIO_PIN_14
 #define BUTTON_CONF_STR GPIO_PIN_15
 
 /*======Definicion de Buzzer=============*/
+// Buzzer conectado al PORA
 #define BUZZER_PIN GPIO_PIN_9
 
 /*
