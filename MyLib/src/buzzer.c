@@ -38,3 +38,13 @@ void buzzer_update(void)
         // Si no se cumplió el tiempo, NO hacer nada (el buzzer sigue sonando)
     }
 }
+/*void buzzer_toogle(uint16_t tiempo_ms)
+{
+    bool state_buzzer = false;
+    if (state_buzzer == true)
+    {
+        buzzer_start(tiempo_ms);
+    }else{
+        buzzer_start(0);
+    }
+}*/

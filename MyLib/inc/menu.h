@@ -17,8 +17,8 @@ typedef enum
 // Estructura para las suboconfiguraciones cuando se selecciona una OPCION_UMBRAL
 typedef enum
 {
-    SUB_UMBRAL_UP,
     SUB_UMBRAL_DOWN,
+    SUB_UMBRAL_UP,
 } sub_config_t;
 
 // Atributos para el menu sera utilizado para guardar las configuracion
@@ -36,6 +36,12 @@ typedef struct
     modo_config_t modo_config;
     // Modo subconfiguraciones
     sub_config_t sub_config;
+    // Activa la configuraciones secundarias
+    uint8_t save_subconfig;
+    bool activar_subconfig;
+    bool activar_subconfig_umbral;
+    uint8_t save_subconfig_umbral;
+    bool activar_ajuste_umbral;
     // Valores configurables
     uint16_t objetivo;
     uint16_t umbral_abajo;

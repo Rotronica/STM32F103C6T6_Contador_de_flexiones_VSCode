@@ -335,5 +335,12 @@ bool button_long_pressed(button_handle_t handle);
  * }
  */
 uint32_t button_pressed_duration(button_handle_t handle);
+/**
+ * @brief Detecta acción del botón al soltar (corta vs larga)
+ * @param handle Handle del botón
+ * @param umbral_ms Tiempo en ms para considerar presión larga (ej: 800)
+ * @return 0 = sin acción, 1 = presión corta, 2 = presión larga
+ */
+uint8_t button_action(button_handle_t handle, uint32_t umbral_ms);
 
 #endif /* BUTTON_H */

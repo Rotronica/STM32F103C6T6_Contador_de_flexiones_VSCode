@@ -110,7 +110,7 @@ void button_update_all(void)
             // Registrar inicio de presión
             if (btn->flag_presionado)
             {
-                btn->inicio_presion = ahora;
+                btn->inicio_presion = ahora; // guarda el
                 btn->long_press_triggered = false;
             }
 

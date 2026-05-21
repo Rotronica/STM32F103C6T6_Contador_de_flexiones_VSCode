@@ -41,9 +41,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define UMBRAL_UP 300
+#define UMBRAL_UP 250
 #define UMBRAL_DOWN 70
-#define OBJETIVO_FLEXIONES 25
+#define OBJETIVO_FLEXIONES 15
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -173,7 +173,7 @@ int main(void)
         else
         {
           distance = VL53L0X_GetDistance(&sensor);
-          contador = flexiones_actualizar(distance, 50, 300);
+          contador = flexiones_actualizar(distance);
           Display7seg_show_number(contador);
         }
       }

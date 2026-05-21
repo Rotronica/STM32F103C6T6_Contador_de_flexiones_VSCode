@@ -28,6 +28,12 @@ static uint8_t lecturas_consecutivas = 0;
 #define TIEMPO_SIN_OBJETO 20 // 20 lecturas ≈ 1 segundo
 static uint8_t contador_sin_objeto = 0;
 
+static uint16_t objetivo_flexiones = 0;
+
+// almacenar umbrales alto y bajo
+uint16_t umbral_flexion = 0;
+uint16_t umbral_arriba = 0;
+
 // ============================================
 // IMPLEMENTACIÓN
 // ============================================
@@ -39,19 +45,19 @@ void flexiones_init(void)
     distancia_anterior = 0;
     contador_estable = 0;
     lecturas_consecutivas = 0;
+    objetivo_flexiones = 10; // Limite de flexiones por defecto 10
+    umbral_flexion = 50;     // Distancia en mm
+    umbral_arriba = 200;     // Distancia en mm
 }
-
-uint16_t flexiones_get_conteo(void)
+uint16_t flexion_umbral_alto(uint16_t umbral_alto)
 {
-    return contador;
+    return umbral_arriba = umbral_alto;
 }
-
-void flexiones_set_conteo(uint16_t nuevo_conteo)
+uint16_t flexion_umbral_bajo(uint16_t umbral_bajo)
 {
-    contador = nuevo_conteo;
+    return umbral_flexion = umbral_bajo;
 }
-
-uint16_t flexiones_actualizar(uint16_t distancia, uint16_t umbral_flexion, uint16_t umbral_arriba)
+uint16_t flexiones_actualizar(uint16_t distancia)
 {
 
     // ============================================
@@ -97,7 +103,7 @@ uint16_t flexiones_actualizar(uint16_t distancia, uint16_t umbral_flexion, uint1
         if ((distancia <= umbral_flexion) && distancia > 0)
         {
             // Confirmar que sigue bajando
-            if (distancia <= 45)
+            if (distancia <= 100)
             {
                 // Llegó muy abajo, considerar flexión completada
                 estado = ESTADO_ABAJO;
@@ -131,8 +137,17 @@ uint16_t flexiones_actualizar(uint16_t distancia, uint16_t umbral_flexion, uint1
                 {
                     // ¡FLEXIÓN COMPLETA!
                     contador++;
-                    // Activar buzzer (no bloqueante)
-                    buzzer_start(500); // 500ms de pitido
+                    // Limite de flexion
+                    if (contador >= flexion_objetivo())
+                    {
+                        buzzer_start(2000);
+                        contador = objetivo_flexiones;
+                    }
+                    else
+                    {
+                        // Activar buzzer (no bloqueante)
+                        buzzer_start(500); // 500ms de pitido
+                    }
                     estado = ESTADO_ARRIBA;
                     contador_estable = 0;
                 }
@@ -157,4 +172,17 @@ uint16_t flexiones_actualizar(uint16_t distancia, uint16_t umbral_flexion, uint1
 void flexiones_cont_reset()
 {
     contador = 0;
+}
+uint16_t flexiones_get_conteo(void)
+{
+    return contador;
+}
+
+void flexiones_set_objetivo(uint16_t nuevo_objetivo)
+{
+    objetivo_flexiones = nuevo_objetivo;
+}
+uint16_t flexion_objetivo(void)
+{
+    return objetivo_flexiones;
 }
