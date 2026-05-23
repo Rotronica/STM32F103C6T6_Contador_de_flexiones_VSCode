@@ -1,16 +1,18 @@
 /**
  * @file VL53L0X.h
  * @brief Librería para el sensor de distancia VL53L0X (Time-of-Flight)
- * @author Rodrigo Calle Condori
- * @version 1.0.0
- * @date 2026
  *
  * @details Esta librería proporciona una interfaz no bloqueante para el sensor
- *          de distancia VL53L0X. Utiliza la función millis() basada en TIM2
- *          para manejar timeouts sin bloquear el sistema.
+ *          de distancia VL53L0X. Incluye filtro de mediana, modo High Speed
+ *          para detección de movimiento rápido, y manejo de timeouts.
+ *
+ * @author Rodrigo Calle Condori
+ * @version 2.0.0
+ * @date 2026
  *
  * @note El sensor debe estar alimentado a 3.3V (NO 5V)
  * @note Requiere resistencias pull-up de 4.7kΩ en líneas SCL y SDA
+ * @note Requiere la función millis() disponible (time_ticks.h)
  */
 
 #ifndef VL53L0X_H
@@ -24,8 +26,8 @@
 /**
  * @brief Estructura principal del sensor VL53L0X
  *
- * Contiene toda la información de estado, configuración y filtros
- * para un sensor. Permite usar múltiples sensores en el mismo bus I2C.
+ * @details Contiene toda la información de estado, configuración y filtros
+ *          para un sensor. Permite usar múltiples sensores en el mismo bus I2C.
  */
 typedef struct
 {
@@ -43,6 +45,10 @@ typedef struct
     uint8_t filter_index;      /**< Índice actual en el buffer circular */
     uint8_t filter_count;      /**< Número de mediciones acumuladas (máx 5) */
     uint16_t last_filtered;    /**< Último valor filtrado por la mediana */
+
+    /* Control de temporización independiente */
+    uint32_t last_measurement_time; /**< Tiempo de la última medición iniciada */
+
 } VL53L0X_t;
 
 /**
@@ -66,44 +72,77 @@ typedef struct
  *         - false: Error en la inicialización (verificar conexiones)
  *
  * @note Esta función debe llamarse UNA SOLA VEZ al inicio del programa
- * @note El sensor debe estar correctamente conectado antes de llamar esta función
- *
- * @example
- * static VL53L0X_t sensor;
- * if (VL53L0X_Init(&sensor, &hi2c1, true)) {
- *     // Sensor listo para usar
- * }
  */
 bool VL53L0X_Init(VL53L0X_t *dev, I2C_HandleTypeDef *hi2c, bool io_2v8);
+
+/**
+ * @brief Configura el sensor en modo High Speed (20ms por medición)
+ *
+ * @details Reduce el timing budget a 20ms y ajusta los periodos VCSEL
+ *          para máxima velocidad. Ideal para detección de movimiento rápido.
+ *          La precisión se reduce ligeramente a ±5%.
+ *
+ * @param dev   Puntero a la estructura VL53L0X_t del sensor
+ *
+ * @note Tiempo de medición: ~20ms
+ * @note Rango máximo: ~1.2m
+ *
+ * @example
+ * VL53L0X_Init(&sensor, &hi2c1, true);
+ * VL53L0X_SetHighSpeedMode(&sensor);  // Para flexiones rápidas
+ */
+void VL53L0X_SetHighSpeedMode(VL53L0X_t *dev);
+
+/**
+ * @brief Configura el sensor en modo por defecto (33ms por medición)
+ *
+ * @details Configuración estándar con balance entre velocidad y precisión.
+ *
+ * @param dev   Puntero a la estructura VL53L0X_t del sensor
+ *
+ * @note Tiempo de medición: ~33ms
+ * @note Precisión: ±3%
+ */
+void VL53L0X_SetDefaultMode(VL53L0X_t *dev);
 
 /**
  * @brief Inicia una medición de distancia (modo no bloqueante)
  *
  * @details Envía el comando al sensor para iniciar una nueva medición.
  *          Esta función retorna inmediatamente sin esperar el resultado.
- *          El estado de la medición debe verificarse con VL53L0X_IsReady().
  *
  * @param dev   Puntero a la estructura VL53L0X_t del sensor
- * @param time_ms   Tiempo ms que le toma para medir
  *
  * @note Si ya hay una medición en curso, esta función no hace nada
- * @note Después de llamar esta función, se debe verificar IsReady() periódicamente
  *
  * @example
  * VL53L0X_StartMeasurement(&sensor);
- * // Continuar con otras tareas mientras el sensor mide
  */
-void VL53L0X_StartMeasurement(VL53L0X_t *dev, uint16_t time_ms);
+void VL53L0X_StartMeasurement(VL53L0X_t *dev);
+
+/**
+ * @brief Inicia una medición solo si ha pasado el intervalo especificado
+ *
+ * @details Función útil para controlar la frecuencia de medición desde el bucle principal.
+ *
+ * @param dev          Puntero a la estructura VL53L0X_t del sensor
+ * @param interval_ms  Intervalo mínimo entre mediciones (ms)
+ *
+ * @return bool
+ *         - true:  Se inició una nueva medición
+ *         - false: No se inició (en curso o intervalo no cumplido)
+ *
+ * @example
+ * if (VL53L0X_StartMeasurementIfReady(&sensor, 25)) {
+ *     // Medición iniciada
+ * }
+ */
+bool VL53L0X_StartMeasurementIfReady(VL53L0X_t *dev, uint32_t interval_ms);
 
 /**
  * @brief Verifica si la medición actual ya está completa
  *
- * @details Comprueba si el sensor ha terminado la medición actual.
- *          También maneja el timeout: si la medición tarda más de
- *          timeout_ms, se considera fallida.
- *
  * @param dev   Puntero a la estructura VL53L0X_t del sensor
- *
  *
  * @return bool
  *         - true:  La medición está completa (lista para leer)
@@ -111,11 +150,6 @@ void VL53L0X_StartMeasurement(VL53L0X_t *dev, uint16_t time_ms);
  *
  * @note Esta función debe llamarse periódicamente (ej: cada 5-10ms)
  * @note La función NO es bloqueante, retorna inmediatamente
- *
- * @example
- * if (VL53L0X_IsReady(&sensor)) {
- *     uint16_t dist = VL53L0X_GetDistance(&sensor);
- * }
  */
 bool VL53L0X_IsReady(VL53L0X_t *dev);
 
@@ -123,93 +157,50 @@ bool VL53L0X_IsReady(VL53L0X_t *dev);
  * @brief Obtiene la distancia filtrada (recomendada)
  *
  * @details Lee el resultado de la medición y aplica un filtro de mediana
- *          con las últimas 5 lecturas para eliminar ruido y lecturas espurias.
- *          El resultado es más estable que GetRawDistance().
+ *          con las últimas 5 lecturas para eliminar ruido.
  *
  * @param dev   Puntero a la estructura VL53L0X_t del sensor
  *
  * @return uint16_t
  *         - Rango válido: 20 a 1200 (milímetros)
- *         - 20:   Distancia mínima detectable (muy cerca)
+ *         - 20:   Distancia mínima detectable
  *         - 1200: Distancia máxima (1200mm = 1.2m)
- *         - Valor anterior: Si la lectura es inválida, mantiene el último válido
  *
  * @note Solo debe llamarse DESPUÉS de que VL53L0X_IsReady() retorne true
- * @note Limpia automáticamente la interrupción del sensor
- *
- * @example
- * if (VL53L0X_IsReady(&sensor)) {
- *     uint16_t dist = VL53L0X_GetDistance(&sensor);
- *     if (dist < 100) {
- *         // Objeto muy cerca
- *     }
- * }
  */
 uint16_t VL53L0X_GetDistance(VL53L0X_t *dev);
 
 /**
  * @brief Obtiene la distancia cruda (sin filtro)
  *
- * @details Lee el resultado de la medición directamente del sensor,
- *          sin aplicar ningún filtro. Útil para depuración o si se necesita
- *          la lectura más rápida posible.
- *
  * @param dev   Puntero a la estructura VL53L0X_t del sensor
  *
- * @return uint16_t
- *         - Rango válido: 20 a 1200 (milímetros)
- *         - 65535: Error de timeout
+ * @return uint16_t Distancia en mm (65535 si error)
  *
- * @warning Las lecturas crudas pueden contener ruido y valores espurios
- * @note Solo debe llamarse DESPUÉS de que VL53L0X_IsReady() retorne true
- * @note Limpia automáticamente la interrupción del sensor
+ * @warning Las lecturas crudas pueden contener ruido
  */
 uint16_t VL53L0X_GetRawDistance(VL53L0X_t *dev);
 
 /**
  * @brief Verifica si la última medición tuvo timeout
  *
- * @details Indica si la medición anterior expiró por timeout.
- *          Esto puede ocurrir si el sensor no responde o no hay objeto detectable.
- *
  * @param dev   Puntero a la estructura VL53L0X_t del sensor
  *
  * @return bool
- *         - true:  La última medición expiró por timeout
+ *         - true:  La última medición expiró
  *         - false: La última medición fue exitosa
  *
  * @note El flag se limpia automáticamente después de leerlo
- * @note Usar después de VL53L0X_IsReady() y antes de GetDistance()
- *
- * @example
- * if (VL53L0X_IsReady(&sensor)) {
- *     if (VL53L0X_TimeoutOccurred(&sensor)) {
- *         Display7_show_number(888);  // Error
- *     } else {
- *         uint16_t dist = VL53L0X_GetDistance(&sensor);
- *     }
- * }
  */
 bool VL53L0X_TimeoutOccurred(VL53L0X_t *dev);
 
 /**
  * @brief Configura el tiempo de timeout para las mediciones
  *
- * @details Establece el tiempo máximo que se esperará por una medición
- *          antes de considerarla fallida. Aumentar este valor puede ayudar
- *          en superficies poco reflectantes o largas distancias.
- *
  * @param dev         Puntero a la estructura VL53L0X_t del sensor
  * @param timeout_ms  Tiempo de timeout en milisegundos
- *                    - 50:   Valor por defecto (rápido)
- *                    - 100:  Recomendado para mayor confiabilidad
- *                    - 200:  Para distancias largas o superficies oscuras
  *
- * @note El timeout debe ser mayor que el tiempo de medición del sensor (~33ms)
- * @note Se recomienda un valor entre 50ms y 200ms
- *
- * @example
- * VL53L0X_SetTimeout(&sensor, 100);  // Timeout de 100ms
+ * @note Recomendado: 30ms para High Speed, 50ms para Default
  */
 void VL53L0X_SetTimeout(VL53L0X_t *dev, uint16_t timeout_ms);
 

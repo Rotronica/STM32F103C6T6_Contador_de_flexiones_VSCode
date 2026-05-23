@@ -32,6 +32,8 @@ void menu_init(menu_t *menu,
     menu->activar_ajuste_umbral = false;
 
     menu->objetivo = objetivo;
+    flexiones_set_objetivo(objetivo);
+
     menu->umbral_abajo = umbral_abajo;
     menu->umbral_arriba = umbral_arriba;
     // Variables para la animacion de espera

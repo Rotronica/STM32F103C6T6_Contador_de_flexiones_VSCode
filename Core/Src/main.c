@@ -116,26 +116,13 @@ int main(void)
   // Inicializar sensor
   static VL53L0X_t sensor;
 
-  Display7seg_show_number(100);
+  VL53L0X_Init(&sensor, &hi2c1, true);
+  VL53L0X_SetHighSpeedMode(&sensor); // Modo rápido para flexiones
+  VL53L0X_SetTimeout(&sensor, 30);   // Timeout de 30ms
 
-  bool init_ok = VL53L0X_Init(&sensor, &hi2c1, true);
+  Display7seg_show_text("inicio");
 
-  if (init_ok)
-  {
-    Display7seg_show_text("inicio");
-  }
-  else
-  {
-    Display7seg_show_number(999);
-  }
-
-  uint32_t wait = millis();
-  while ((millis() - wait) < 2000)
-  {
-    Display7seg_refresh();
-  }
-
-  VL53L0X_SetTimeout(&sensor, 100);
+  buzzer_start(500); // 500ms de pitido
 
   uint16_t distance = 0;
   uint16_t contador = 0;
@@ -162,17 +149,18 @@ int main(void)
       {
         flexiones_cont_reset();
       }
-      VL53L0X_StartMeasurement(&sensor, 100); // inicia la medicion
+      // Iniciar medición cada 25ms (más rápido que el tiempo de medición)
+      if (VL53L0X_StartMeasurementIfReady(&sensor, 25))
+      {
+        // Medición iniciada
+      }
 
       if (VL53L0X_IsReady(&sensor))
       {
-        if (VL53L0X_TimeoutOccurred(&sensor))
-        {
-          Display7seg_show_number(888); // Medicion expiro por timeout
-        }
-        else
+        if (!VL53L0X_TimeoutOccurred(&sensor))
         {
           distance = VL53L0X_GetDistance(&sensor);
+          // Procesar distancia...
           contador = flexiones_actualizar(distance);
           Display7seg_show_number(contador);
         }
@@ -183,22 +171,6 @@ int main(void)
     {
       menu_update_display(&menu);
     }
-
-    /*VL53L0X_StartMeasurement(&sensor, 100); // inicia la medicion
-
-    if (VL53L0X_IsReady(&sensor))
-    {
-      if (VL53L0X_TimeoutOccurred(&sensor))
-      {
-        Display7seg_show_number(888); // Medicion expiro por timeout
-      }
-      else
-      {
-        distance = VL53L0X_GetDistance(&sensor);
-        contador = flexiones_actualizar(distance, 50, 300);
-        Display7seg_show_number(distance);
-      }
-    }*/
     /* USER CODE END 3 */
   }
 }

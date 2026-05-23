@@ -1,8 +1,13 @@
+/**
+ * @file VL53L0X.c
+ * @brief Implementación de la librería del sensor VL53L0X
+ */
+
 #include "VL53L0X.h"
 #include <string.h>
 
 //============================================================================
-// REGISTROS DEL SENSOR (TODOS LOS DEFINIDOS)
+// REGISTROS DEL SENSOR
 //============================================================================
 #define SYSRANGE_START 0x00
 #define SYSTEM_SEQUENCE_CONFIG 0x01
@@ -33,11 +38,13 @@
 #define ALGO_PHASECAL_CONFIG_TIMEOUT 0x30
 #define ALGO_PHASECAL_LIM 0x30
 
-uint32_t last_measurement = 0;
+// Macros auxiliares
+#define encodeVcselPeriod(period_pclks) (((period_pclks) >> 1) - 1)
 
 //============================================================================
 // FUNCIONES I2C PRIVADAS
 //============================================================================
+
 static void write_reg(VL53L0X_t *dev, uint8_t reg, uint8_t value)
 {
     HAL_I2C_Mem_Write(dev->hi2c, dev->address, reg, 1, &value, 1, 10);
@@ -76,6 +83,7 @@ static void read_multi(VL53L0X_t *dev, uint8_t reg, uint8_t *dst, uint8_t count)
 //============================================================================
 // FILTRO DE MEDIANA
 //============================================================================
+
 static uint16_t filter_median(VL53L0X_t *dev, uint16_t new_value)
 {
     dev->filter_buffer[dev->filter_index] = new_value;
@@ -112,6 +120,7 @@ static uint16_t filter_median(VL53L0X_t *dev, uint16_t new_value)
 //============================================================================
 // FUNCIONES DE INICIALIZACIÓN PRIVADAS
 //============================================================================
+
 static bool get_spad_info(VL53L0X_t *dev, uint8_t *count, bool *aperture)
 {
     uint8_t tmp;
@@ -170,6 +179,49 @@ static bool perform_calibration(VL53L0X_t *dev, uint8_t vhv_byte)
 }
 
 //============================================================================
+// CONFIGURACIÓN DE MODO
+//============================================================================
+
+void VL53L0X_SetHighSpeedMode(VL53L0X_t *dev)
+{
+    // Timing budget de 20ms (HIGH SPEED)
+    write_reg16(dev, FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, 0x0019);
+
+    // Pre-range: periodo 12 (mínimo)
+    write_reg(dev, PRE_RANGE_CONFIG_VCSEL_PERIOD, encodeVcselPeriod(12));
+
+    // Final-range: periodo 8 (mínimo)
+    write_reg(dev, FINAL_RANGE_CONFIG_VCSEL_PERIOD, encodeVcselPeriod(8));
+
+    // Reducir límite de señal para mediciones más rápidas
+    write_reg16(dev, FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, 0x0010);
+
+    // Reducir timeout del pre-range
+    write_reg16(dev, PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI, 0x0009);
+
+    dev->timeout_ms = 30;
+}
+
+void VL53L0X_SetDefaultMode(VL53L0X_t *dev)
+{
+    // Timing budget de 33ms (DEFAULT)
+    write_reg16(dev, FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, 0x0022);
+
+    // Pre-range: periodo 14 (estándar)
+    write_reg(dev, PRE_RANGE_CONFIG_VCSEL_PERIOD, encodeVcselPeriod(14));
+
+    // Final-range: periodo 10 (estándar)
+    write_reg(dev, FINAL_RANGE_CONFIG_VCSEL_PERIOD, encodeVcselPeriod(10));
+
+    // Restaurar límite de señal
+    write_reg16(dev, FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, 0x0020);
+
+    write_reg16(dev, PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI, 0x0019);
+
+    dev->timeout_ms = 50;
+}
+
+//============================================================================
 // FUNCIONES PÚBLICAS
 //============================================================================
 
@@ -177,13 +229,14 @@ bool VL53L0X_Init(VL53L0X_t *dev, I2C_HandleTypeDef *hi2c, bool io_2v8)
 {
     memset(dev, 0, sizeof(VL53L0X_t));
     dev->hi2c = hi2c;
-    dev->address = 0x52; // 0x29 << 1
+    dev->address = 0x52;
     dev->io_2v8 = io_2v8;
     dev->timeout_ms = 50;
     dev->is_measuring = false;
     dev->last_timeout = false;
+    dev->last_measurement_time = 0;
 
-    // Pequeña pausa (usando millis)
+    // Pequeña pausa
     uint32_t start = millis();
     while ((millis() - start) < 50)
         ;
@@ -279,25 +332,35 @@ bool VL53L0X_Init(VL53L0X_t *dev, I2C_HandleTypeDef *hi2c, bool io_2v8)
     return true;
 }
 
-void VL53L0X_StartMeasurement(VL53L0X_t *dev, uint16_t time_ms)
+void VL53L0X_StartMeasurement(VL53L0X_t *dev)
 {
-    if (tick_espera(&last_measurement, time_ms))
+    if (dev->is_measuring)
+        return;
+
+    write_reg(dev, 0x80, 0x01);
+    write_reg(dev, 0xFF, 0x01);
+    write_reg(dev, 0x00, 0x00);
+    write_reg(dev, 0x91, dev->stop_variable);
+    write_reg(dev, 0x00, 0x01);
+    write_reg(dev, 0xFF, 0x00);
+    write_reg(dev, 0x80, 0x00);
+    write_reg(dev, SYSRANGE_START, 0x01);
+
+    dev->measurement_start_time = millis();
+    dev->is_measuring = true;
+}
+
+bool VL53L0X_StartMeasurementIfReady(VL53L0X_t *dev, uint32_t interval_ms)
+{
+    uint32_t ahora = millis();
+
+    if (!dev->is_measuring && (ahora - dev->last_measurement_time) >= interval_ms)
     {
-        if (dev->is_measuring)
-            return;
-
-        write_reg(dev, 0x80, 0x01);
-        write_reg(dev, 0xFF, 0x01);
-        write_reg(dev, 0x00, 0x00);
-        write_reg(dev, 0x91, dev->stop_variable);
-        write_reg(dev, 0x00, 0x01);
-        write_reg(dev, 0xFF, 0x00);
-        write_reg(dev, 0x80, 0x00);
-        write_reg(dev, SYSRANGE_START, 0x01);
-
-        dev->measurement_start_time = millis();
-        dev->is_measuring = true;
+        VL53L0X_StartMeasurement(dev);
+        dev->last_measurement_time = ahora;
+        return true;
     }
+    return false;
 }
 
 bool VL53L0X_IsReady(VL53L0X_t *dev)

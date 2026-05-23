@@ -45,9 +45,9 @@ void flexiones_init(void)
     distancia_anterior = 0;
     contador_estable = 0;
     lecturas_consecutivas = 0;
-    objetivo_flexiones = 10; // Limite de flexiones por defecto 10
-    umbral_flexion = 50;     // Distancia en mm
-    umbral_arriba = 200;     // Distancia en mm
+    // objetivo_flexiones = 10; // Limite de flexiones por defecto 10
+    umbral_flexion = 50; // Distancia en mm
+    umbral_arriba = 200; // Distancia en mm
 }
 uint16_t flexion_umbral_alto(uint16_t umbral_alto)
 {
@@ -103,11 +103,11 @@ uint16_t flexiones_actualizar(uint16_t distancia)
         if ((distancia <= umbral_flexion) && distancia > 0)
         {
             // Confirmar que sigue bajando
-            if (distancia <= 100)
-            {
-                // Llegó muy abajo, considerar flexión completada
-                estado = ESTADO_ABAJO;
-            }
+            // if (distancia <= 50)
+            //{
+            // Llegó muy abajo, considerar flexión completada
+            estado = ESTADO_ABAJO;
+            //}
         }
         else if (distancia > umbral_arriba)
         {
@@ -146,7 +146,7 @@ uint16_t flexiones_actualizar(uint16_t distancia)
                     else
                     {
                         // Activar buzzer (no bloqueante)
-                        buzzer_start(500); // 500ms de pitido
+                        buzzer_start(100); // 100ms de pitido
                     }
                     estado = ESTADO_ARRIBA;
                     contador_estable = 0;
