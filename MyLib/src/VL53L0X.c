@@ -396,10 +396,17 @@ uint16_t VL53L0X_GetDistance(VL53L0X_t *dev)
 {
     uint16_t raw = VL53L0X_GetRawDistance(dev);
 
-    if (raw < 20)
-        raw = 20;
-    if (raw > 1200)
-        raw = dev->last_filtered > 0 ? dev->last_filtered : 1200;
+    // VALIDACIÓN MEJORADA
+    if (raw >= 8190 || raw == 65535 || raw == 20 || raw < 40 || raw > 1000)
+    {
+        return dev->last_filtered;
+    }
+
+    // Limitar rango
+    if (raw < 40)
+        raw = 40;
+    if (raw > 1000)
+        raw = 1000;
 
     return filter_median(dev, raw);
 }

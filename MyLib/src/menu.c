@@ -21,21 +21,18 @@ void menu_init(menu_t *menu,
     menu->btn_down = btn_down;
     // Guardar estado
     menu->estado = MODO_ESPERA;
-    menu->modo_config = OPCION_OBJETIVOS;
-    menu->sub_config = SUB_UMBRAL_DOWN;
 
     // Activa configuracion secundarias
     menu->save_subconfig = OPCION_OBJETIVOS;
-    menu->activar_subconfig = false;
-    menu->activar_subconfig_umbral = false;
-    menu->save_subconfig_umbral = SUB_UMBRAL_DOWN;
-    menu->activar_ajuste_umbral = false;
+    menu->save_umbrales = UMBRAL_UP;
 
     menu->objetivo = objetivo;
     flexiones_set_objetivo(objetivo);
 
     menu->umbral_abajo = umbral_abajo;
     menu->umbral_arriba = umbral_arriba;
+    flexion_umbral_alto(umbral_arriba);
+    flexion_umbral_bajo(umbral_abajo);
     // Variables para la animacion de espera
     menu->last_animation = 0;
     menu->animation_frame = 0;
@@ -47,7 +44,6 @@ void menu_init(menu_t *menu,
 void menu_update(menu_t *menu)
 {
     uint32_t ahora = millis();
-    bool flags_starts = 0;
     switch (menu->estado)
     {
     case MODO_ESPERA:
@@ -58,25 +54,24 @@ void menu_update(menu_t *menu)
             menu->last_animation = ahora;
             menu->animation_frame = (menu->animation_frame + 1) % NUM_FRAMES;
         }
-        flags_starts = button_is_pressed(menu->btn_start);
         // Empezar modo contador
-        if (button_released(menu->btn_start) && flags_starts == 0)
+        if (button_released(menu->btn_start))
         {
             menu->estado = MODO_CONTEO;
             menu->start_contador = true;
-            buzzer_start(50);
-        }
-        // Entrar a modo Configuracion
-        if (button_long_pressed(menu->btn_start) && flags_starts == 1)
-        {
-            menu->estado = MODO_CONFIGURACION;
-            flags_starts = true;
             buzzer_start(100);
         }
+        // Se presiono largo tiempo ingresa a modo configuracion
+        if (button_long_pressed(menu->btn_start))
+        {
+            menu->estado = MODO_CONFIGURACION;
+            buzzer_start(300);
+        }
+
         break;
     case MODO_CONTEO:
         // Resetear contador
-        if (button_pressed(menu->btn_reset))
+        if (button_released(menu->btn_reset))
         {
             buzzer_start(100);
             menu->reset_contador = true;
@@ -90,182 +85,164 @@ void menu_update(menu_t *menu)
 
         break;
     case MODO_CONFIGURACION:
-        // Seleccion de las opciones
-        if (!menu->activar_subconfig)
-        {
-            // Aqui se puede manipular btn up y down y navegar entre ociones
-            // eso si es que la varible activar_subconfig es falso, cosa que cuando se navegue
-            // y se seleccione cualquier opcion y se acepte con btn_start activa la varible: activar_subconfig=true
-            // para luego bloquearlas y no interrumpa la subseleccion, en el cual de la misma manera
-            // se utilizaran estos pulsadores up y down
-            if (button_released(menu->btn_up))
-            {
-                buzzer_start(50);
-                if (menu->modo_config >= OPCION_UMBRAL)
-                {
-                    menu->modo_config--;
 
-                    if (menu->modo_config < 0)
-                    {
-                        menu->modo_config = 0;
-                    }
-                }
-            }
-            if (button_released(menu->btn_down))
+        // Aqui se puede manipular btn up y down y navegar entre ociones
+        // eso si es que la varible activar_subconfig es falso, cosa que cuando se navegue
+        // y se seleccione cualquier opcion y se acepte con btn_start activa la varible: activar_subconfig=true
+        // para luego bloquearlas y no interrumpa la subseleccion, en el cual de la misma manera
+        // se utilizaran estos pulsadores up y down
+        static uint8_t opciones = 1;
+        if (button_released(menu->btn_up))
+        {
+            buzzer_start(50);
+            opciones = opciones + 1;
+            if (opciones >= 2)
             {
-                buzzer_start(50);
-                if (menu->modo_config <= OPCION_OBJETIVOS)
-                {
-                    menu->modo_config++;
-                    if (menu->modo_config > OPCION_UMBRAL)
-                    {
-                        menu->modo_config = OPCION_UMBRAL;
-                    }
-                }
+                opciones = 2;
             }
+        }
+        if (button_released(menu->btn_down))
+        {
+            buzzer_start(50);
+            opciones = opciones - 1;
+            if (opciones <= 1)
+            {
+                opciones = 1;
+            }
+        }
+        switch (opciones)
+        {
+        case 1:
+            menu->save_subconfig = OPCION_OBJETIVOS;
+            break;
+        case 2:
+            menu->save_subconfig = OPCION_UMBRAL;
+            break;
+        default:
+            break;
+        }
+        // Confirmar opcion elegida
+        if (button_long_pressed(menu->btn_start))
+        {
+            buzzer_start(300);
+            menu->estado = menu->save_subconfig;
         }
         // ir atras, se tiene que presionar unos segundos mas
         if (button_long_pressed(menu->btn_reset))
         {
+            buzzer_start(300);
+            menu->estado = MODO_ESPERA;
+            menu->save_subconfig = OPCION_OBJETIVOS;
+            opciones = 1; // Variable de seleccion Condicion incial de las opciones Se coloca a OPCION_OBJETIVOS
+        }
+        break;
+    case OPCION_OBJETIVOS:
+        if (button_pressed(menu->btn_up) && menu->objetivo < 999)
+        {
+            buzzer_start(100);
+            menu->objetivo++;
+        }
+        if (button_pressed(menu->btn_down) && menu->objetivo > 5)
+        {
+            buzzer_start(100);
+            menu->objetivo--;
+        }
+        // Guardar objetivos configuraciones
+        if (button_long_pressed(menu->btn_start))
+        {
+            buzzer_start(300);
+            flexiones_set_objetivo(menu->objetivo);
+        }
+        // Reset
+        if (button_long_pressed(menu->btn_reset))
+        {
             buzzer_start(200);
             menu->estado = MODO_ESPERA;
-            menu->modo_config = OPCION_OBJETIVOS;
-            menu->activar_subconfig = false;
-            menu->activar_subconfig_umbral = false;
-            menu->activar_ajuste_umbral = false;
+            menu->save_subconfig = OPCION_OBJETIVOS;
         }
-        // Para entrar al modo elegido con el boton start ya sea OPCION_OBJETIVO o OPCION_UMBRAL
-        if (button_long_pressed(menu->btn_start) && !menu->activar_subconfig)
+        break;
+    case OPCION_UMBRAL:
+        // Opciones a escojer
+        if (button_released(menu->btn_up))
+        {
+            buzzer_start(50);
+            menu->save_umbrales = UMBRAL_UP;
+        }
+        if (button_released(menu->btn_down))
+        {
+            buzzer_start(50);
+            menu->save_umbrales = UMBRAL_DOWN;
+        }
+        // Ingresar a la opcion elegida
+        if (button_long_pressed(menu->btn_start))
+        {
+            buzzer_start(300);
+            menu->estado = menu->save_umbrales;
+        }
+
+        // Reset
+        if (button_long_pressed(menu->btn_reset))
         {
             buzzer_start(200);
-            menu->save_subconfig = menu->modo_config;
-            menu->activar_subconfig = true;
+            menu->estado = MODO_ESPERA;
+            menu->save_subconfig = OPCION_OBJETIVOS;
+            menu->save_umbrales = UMBRAL_UP;
+            opciones = 1; // Variable de seleccion Condicion incial de las opciones Se coloca a OPCION_OBJETIVOS
         }
-        if (menu->activar_subconfig)
+        break;
+    case UMBRAL_UP:
+        if (button_pressed(menu->btn_up) && menu->umbral_arriba < 999)
         {
-            switch (menu->save_subconfig)
-            {
-            case OPCION_OBJETIVOS:
-                if (button_pressed(menu->btn_up) && menu->objetivo < 999)
-                {
-                    buzzer_start(100);
-                    menu->objetivo++;
-                }
-                if (button_pressed(menu->btn_down) && menu->objetivo > 5)
-                {
-                    buzzer_start(100);
-                    menu->objetivo--;
-                }
-                // Confirma objetivo de flexion
-                if (button_pressed(menu->btn_start))
-                {
-                    buzzer_start(300);
-                    flexiones_set_objetivo(menu->objetivo);
-                    menu->activar_subconfig = false;
-                }
-                break;
-            case OPCION_UMBRAL:
-                menu->activar_subconfig_umbral = true;
-                if (!menu->activar_ajuste_umbral)
-                {
-                    if (button_released(menu->btn_up))
-                    {
-                        buzzer_start(50);
-                        if (menu->sub_config >= SUB_UMBRAL_UP)
-                        {
-                            menu->sub_config--;
-
-                            if (menu->sub_config < 0) // Limete de umbral
-                            {
-                                menu->sub_config = 0;
-                            }
-                        }
-                    }
-                    if (button_released(menu->btn_down))
-                    {
-                        buzzer_start(50);
-                        if (menu->sub_config <= SUB_UMBRAL_DOWN)
-                        {
-                            menu->sub_config++;
-                            if (menu->sub_config > SUB_UMBRAL_UP)
-                            {
-                                menu->sub_config = SUB_UMBRAL_UP;
-                            }
-                        }
-                    }
-                }
-                // Para entrar al modo elegido con el boton start SUB_UMBRAL_DOWN O UP
-                if (button_pressed(menu->btn_start) && !menu->activar_ajuste_umbral)
-                {
-                    buzzer_start(200);
-                    menu->save_subconfig_umbral = menu->sub_config;
-                    menu->activar_ajuste_umbral = true;
-                }
-                if (menu->activar_ajuste_umbral)
-                {
-                    switch (menu->save_subconfig_umbral)
-                    {
-                    case SUB_UMBRAL_DOWN:
-                        if (button_pressed(menu->btn_up) && menu->umbral_abajo < 999)
-                        {
-                            buzzer_start(100);
-                            menu->umbral_abajo++;
-                        }
-                        if (button_pressed(menu->btn_down) && menu->umbral_abajo > 5)
-                        {
-                            buzzer_start(100);
-                            menu->umbral_abajo--;
-                        }
-                        // Confirma umbral abajo
-                        // if (button_released(menu->btn_start))
-                        //{
-                        // ✅ CORRECTO
-                        uint32_t tiempo_espera_1 = button_pressed_duration(menu->btn_start);
-                        if (tiempo_espera_1 >= 1000)
-                        {
-                            buzzer_start(1000);
-                            flexion_umbral_bajo(menu->umbral_abajo);
-                            menu->activar_ajuste_umbral = false;
-                            menu->activar_subconfig = false;
-                            menu->activar_subconfig_umbral = false;
-                        }
-                        //}
-                        break;
-                    case SUB_UMBRAL_UP:
-
-                        if (button_pressed(menu->btn_up) && menu->umbral_arriba < 999)
-                        {
-                            buzzer_start(100);
-                            menu->umbral_arriba++;
-                        }
-                        if (button_pressed(menu->btn_down) && menu->umbral_arriba > 5)
-                        {
-                            buzzer_start(100);
-                            menu->umbral_arriba--;
-                        }
-                        // Confirma umbral alto
-                        uint32_t tiempo_espera_2 = button_pressed_duration(menu->btn_start);
-                        if (tiempo_espera_2 >= 1000)
-                        {
-                            buzzer_start(1000);
-                            flexion_umbral_alto(menu->umbral_arriba);
-                            menu->activar_ajuste_umbral = false;
-                            menu->activar_subconfig = false;
-                            menu->activar_subconfig_umbral = false;
-                        }
-                        break;
-
-                    default:
-                        break;
-                    }
-                }
-
-                break;
-            default:
-                break;
-            }
+            buzzer_start(100);
+            menu->umbral_arriba++;
         }
-
+        if (button_pressed(menu->btn_down) && menu->umbral_arriba > 5)
+        {
+            buzzer_start(100);
+            menu->umbral_arriba--;
+        }
+        // Guardar configuuracion
+        if (button_long_pressed(menu->btn_start))
+        {
+            buzzer_start(300);
+            flexion_umbral_alto(menu->umbral_arriba);
+        }
+        // Reset
+        if (button_long_pressed(menu->btn_reset))
+        {
+            buzzer_start(200);
+            menu->estado = MODO_ESPERA;
+            menu->save_subconfig = OPCION_OBJETIVOS;
+            menu->save_umbrales = UMBRAL_UP;
+            opciones = 1; // Variable de seleccion Condicion incial de las opciones Se coloca a OPCION_OBJETIVOS
+        }
+        break;
+    case UMBRAL_DOWN:
+        if (button_pressed(menu->btn_up) && menu->umbral_abajo < 999)
+        {
+            buzzer_start(100);
+            menu->umbral_abajo++;
+        }
+        if (button_pressed(menu->btn_down) && menu->umbral_abajo > 5)
+        {
+            buzzer_start(100);
+            menu->umbral_abajo--;
+        }
+        // Reset
+        if (button_long_pressed(menu->btn_reset))
+        {
+            buzzer_start(200);
+            menu->estado = MODO_ESPERA;
+            menu->save_subconfig = OPCION_OBJETIVOS;
+            menu->save_umbrales = UMBRAL_UP;
+            opciones = 1; // Variable de seleccion Condicion incial de las opciones Se coloca a OPCION_OBJETIVOS
+        }
+        // Guardar configuuracion
+        if (button_long_pressed(menu->btn_start))
+        {
+            buzzer_start(300);
+            flexion_umbral_bajo(menu->umbral_abajo);
+        }
         break;
     default:
         break;
@@ -332,60 +309,34 @@ void menu_update_display(menu_t *menu)
         // El contado se visualiza desde el main
         break;
     case MODO_CONFIGURACION:
-        switch (menu->modo_config)
+        if (menu->save_subconfig == OPCION_OBJETIVOS)
         {
-        case OPCION_OBJETIVOS:
-
-            // Si se entro a la subconfiguracion
-            if (menu->activar_subconfig == true)
-            {
-                Display7seg_show_number(menu->objetivo);
-            }
-            else
-            {
-                Display7seg_show_text("objetivo");
-            }
-
-            break;
-        case OPCION_UMBRAL:
-            // Necesito activar las subopciones
-            if (menu->activar_subconfig_umbral)
-            {
-                switch (menu->sub_config)
-                {
-                case SUB_UMBRAL_UP:
-                    if (menu->activar_ajuste_umbral)
-                    {
-                        Display7seg_show_number(menu->umbral_arriba);
-                    }
-                    else
-                    {
-                        Display7seg_show_text("arriba");
-                    }
-
-                    break;
-                case SUB_UMBRAL_DOWN:
-                    if (menu->activar_ajuste_umbral)
-                    {
-                        Display7seg_show_number(menu->umbral_abajo);
-                    }
-                    else
-                    {
-                        Display7seg_show_text("abajo");
-                    }
-                    break;
-                default:
-                    break;
-                }
-            }
-            else
-            {
-                Display7seg_show_text("umbral");
-            }
-            break;
-        default:
-            break;
+            Display7seg_show_text("objetivo");
         }
+        if (menu->save_subconfig == OPCION_UMBRAL)
+        {
+            Display7seg_show_text("umbral");
+        }
+        break;
+    case OPCION_OBJETIVOS:
+        Display7seg_show_number(menu->objetivo);
+        break;
+    case OPCION_UMBRAL:
+        if (menu->save_umbrales == UMBRAL_UP)
+        {
+            Display7seg_show_text("arriba");
+        }
+        if (menu->save_umbrales == UMBRAL_DOWN)
+        {
+            Display7seg_show_text("abajo");
+        }
+        break;
+    case UMBRAL_UP:
+        Display7seg_show_number(menu->umbral_arriba);
+        break;
+    case UMBRAL_DOWN:
+        Display7seg_show_number(menu->umbral_abajo);
+        break;
     default:
         break;
     }

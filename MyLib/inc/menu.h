@@ -4,22 +4,17 @@
 // Estructura enum para el estado del sistem
 typedef enum
 {
+    // Modo
     MODO_ESPERA,
     MODO_CONTEO,
     MODO_CONFIGURACION,
-} sistema_estado_t;
-// Estructura enum para las opciones cuando se ingrese a configuracon
-typedef enum
-{
+    // Opciones disponibles en Modo configuracion
     OPCION_OBJETIVOS,
     OPCION_UMBRAL,
-} modo_config_t;
-// Estructura para las suboconfiguraciones cuando se selecciona una OPCION_UMBRAL
-typedef enum
-{
-    SUB_UMBRAL_DOWN,
-    SUB_UMBRAL_UP,
-} sub_config_t;
+    // Subopciones de la opcion UMBRAL
+    UMBRAL_DOWN,
+    UMBRAL_UP,
+} sistema_estado_t;
 
 // Atributos para el menu sera utilizado para guardar las configuracion
 typedef struct
@@ -32,16 +27,10 @@ typedef struct
 
     // Estado
     sistema_estado_t estado;
-    // Modo Configuracion
-    modo_config_t modo_config;
-    // Modo subconfiguraciones
-    sub_config_t sub_config;
     // Activa la configuraciones secundarias
-    uint8_t save_subconfig;
-    bool activar_subconfig;
-    bool activar_subconfig_umbral;
-    uint8_t save_subconfig_umbral;
-    bool activar_ajuste_umbral;
+    uint8_t save_subconfig; // Guarda las subopciones
+    uint8_t save_umbrales;  // Guarda el tipo de umbral elegido
+
     // Valores configurables
     uint16_t objetivo;
     uint16_t umbral_abajo;

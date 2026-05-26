@@ -31,7 +31,7 @@ static uint8_t contador_sin_objeto = 0;
 static uint16_t objetivo_flexiones = 0;
 
 // almacenar umbrales alto y bajo
-uint16_t umbral_flexion = 0;
+uint16_t umbral_abajo = 0;
 uint16_t umbral_arriba = 0;
 
 // ============================================
@@ -46,8 +46,8 @@ void flexiones_init(void)
     contador_estable = 0;
     lecturas_consecutivas = 0;
     // objetivo_flexiones = 10; // Limite de flexiones por defecto 10
-    umbral_flexion = 50; // Distancia en mm
-    umbral_arriba = 200; // Distancia en mm
+    // umbral_abajo = 50; // Distancia en mm
+    // umbral_arriba = 200; // Distancia en mm
 }
 uint16_t flexion_umbral_alto(uint16_t umbral_alto)
 {
@@ -55,7 +55,7 @@ uint16_t flexion_umbral_alto(uint16_t umbral_alto)
 }
 uint16_t flexion_umbral_bajo(uint16_t umbral_bajo)
 {
-    return umbral_flexion = umbral_bajo;
+    return umbral_abajo = umbral_bajo;
 }
 uint16_t flexiones_actualizar(uint16_t distancia)
 {
@@ -64,19 +64,15 @@ uint16_t flexiones_actualizar(uint16_t distancia)
     // VALIDAR LECTURA
     // ============================================
     // Ignorar lecturas inválidas
-    if (distancia == 0)
+    // Cuando el detector no tiene nada por delante envia 20mm
+    if (distancia < 20 || distancia > 1200)
     {
         // Sin objeto detectado - contador de ausencia
         contador_sin_objeto++;
-        if (contador_sin_objeto >= TIEMPO_SIN_OBJETO)
+        if (contador_sin_objeto >= TIEMPO_SIN_OBJETO && estado != ESTADO_ARRIBA)
         {
-            // Más de 1 segundo sin objeto: reiniciar estado
-            if (estado != ESTADO_ARRIBA)
-            {
-                estado = ESTADO_ARRIBA;
-                lecturas_consecutivas = 0;
-                contador_estable = 0;
-            }
+            estado = ESTADO_ARRIBA;
+            contador_estable = 0;
         }
         return (uint8_t)contador;
     }
@@ -92,7 +88,7 @@ uint16_t flexiones_actualizar(uint16_t distancia)
     {
     case ESTADO_ARRIBA:
         // Esperando que el usuario baje (distancia disminuye)
-        if (distancia <= umbral_flexion)
+        if (distancia <= umbral_abajo)
         {
             estado = ESTADO_BAJANDO;
         }
@@ -100,11 +96,8 @@ uint16_t flexiones_actualizar(uint16_t distancia)
 
     case ESTADO_BAJANDO:
         // Está bajando, esperar que llegue abajo
-        if ((distancia <= umbral_flexion) && distancia > 0)
+        if ((distancia <= umbral_abajo) && distancia > 20)
         {
-            // Confirmar que sigue bajando
-            // if (distancia <= 50)
-            //{
             // Llegó muy abajo, considerar flexión completada
             estado = ESTADO_ABAJO;
             //}
@@ -121,7 +114,7 @@ uint16_t flexiones_actualizar(uint16_t distancia)
         if (distancia >= umbral_arriba)
         {
             estado = ESTADO_SUBIENDO;
-            // contador_estable = 0;
+            contador_estable = 0;
         }
         break;
 
@@ -158,7 +151,7 @@ uint16_t flexiones_actualizar(uint16_t distancia)
             }
         }
         // Si vuelve a bajar sin completar (rebote)
-        else if (distancia <= umbral_flexion)
+        else if (distancia <= umbral_abajo)
         {
             estado = ESTADO_ABAJO;
             contador_estable = 0;

@@ -41,8 +41,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define UMBRAL_UP 250
-#define UMBRAL_DOWN 70
+#define UMBRAL_ALTO 250
+#define UMBRAL_BAJO 70
 #define OBJETIVO_FLEXIONES 15
 /* USER CODE END PD */
 
@@ -111,7 +111,7 @@ int main(void)
   crear_botones();
   // iniciar menu
   static menu_t menu;
-  menu_init(&menu, btn_start, btn_up, btn_down, btn_reset, OBJETIVO_FLEXIONES, UMBRAL_DOWN, UMBRAL_UP);
+  menu_init(&menu, btn_start, btn_up, btn_down, btn_reset, OBJETIVO_FLEXIONES, UMBRAL_BAJO, UMBRAL_ALTO);
 
   // Inicializar sensor
   static VL53L0X_t sensor;
@@ -162,7 +162,7 @@ int main(void)
           distance = VL53L0X_GetDistance(&sensor);
           // Procesar distancia...
           contador = flexiones_actualizar(distance);
-          Display7seg_show_number(contador);
+          Display7seg_show_number(distance);
         }
       }
     }
@@ -171,6 +171,27 @@ int main(void)
     {
       menu_update_display(&menu);
     }
+    //===========Opcion objetivos========================
+    if (menu_get_estado(&menu) == OPCION_OBJETIVOS)
+    {
+      menu_update_display(&menu);
+    }
+    //===========Opcion umbral========================
+    if (menu_get_estado(&menu) == OPCION_UMBRAL)
+    {
+      menu_update_display(&menu);
+    }
+    //===========Umbral alto========================
+    if (menu_get_estado(&menu) == UMBRAL_UP)
+    {
+      menu_update_display(&menu);
+    }
+    //===========Umbral bajo========================
+    if (menu_get_estado(&menu) == UMBRAL_DOWN)
+    {
+      menu_update_display(&menu);
+    }
+
     /* USER CODE END 3 */
   }
 }
