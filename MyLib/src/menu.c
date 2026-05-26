@@ -5,6 +5,7 @@
 #include "flexiones.h"
 #define NUM_FRAMES 14
 
+uint16_t dato_guardado_main = 0;
 void menu_init(menu_t *menu,
                button_handle_t btn_start,
                button_handle_t btn_up,
@@ -40,6 +41,9 @@ void menu_init(menu_t *menu,
     menu->start_contador = false;
     // Condicion inicial para el reset del contador
     menu->reset_contador = false;
+
+    // Datos de main
+    dato_guardado_main = 0;
 }
 void menu_update(menu_t *menu)
 {
@@ -85,20 +89,15 @@ void menu_update(menu_t *menu)
 
         break;
     case MODO_CONFIGURACION:
-
         // Aqui se puede manipular btn up y down y navegar entre ociones
-        // eso si es que la varible activar_subconfig es falso, cosa que cuando se navegue
-        // y se seleccione cualquier opcion y se acepte con btn_start activa la varible: activar_subconfig=true
-        // para luego bloquearlas y no interrumpa la subseleccion, en el cual de la misma manera
-        // se utilizaran estos pulsadores up y down
         static uint8_t opciones = 1;
         if (button_released(menu->btn_up))
         {
             buzzer_start(50);
             opciones = opciones + 1;
-            if (opciones >= 2)
+            if (opciones >= CANTIDAD_OPCIONES)
             {
-                opciones = 2;
+                opciones = CANTIDAD_OPCIONES;
             }
         }
         if (button_released(menu->btn_down))
@@ -117,6 +116,9 @@ void menu_update(menu_t *menu)
             break;
         case 2:
             menu->save_subconfig = OPCION_UMBRAL;
+            break;
+        case 3:
+            menu->save_subconfig = OPCION_MEDICION;
             break;
         default:
             break;
@@ -180,6 +182,17 @@ void menu_update(menu_t *menu)
             menu->estado = menu->save_umbrales;
         }
 
+        // Reset
+        if (button_long_pressed(menu->btn_reset))
+        {
+            buzzer_start(200);
+            menu->estado = MODO_ESPERA;
+            menu->save_subconfig = OPCION_OBJETIVOS;
+            menu->save_umbrales = UMBRAL_UP;
+            opciones = 1; // Variable de seleccion Condicion incial de las opciones Se coloca a OPCION_OBJETIVOS
+        }
+        break;
+    case OPCION_MEDICION:
         // Reset
         if (button_long_pressed(menu->btn_reset))
         {
@@ -306,7 +319,7 @@ void menu_update_display(menu_t *menu)
         }
         break;
     case MODO_CONTEO:
-        // El contado se visualiza desde el main
+        // Aqui entra la visualizacion para el contador pero se lo hace en el main
         break;
     case MODO_CONFIGURACION:
         if (menu->save_subconfig == OPCION_OBJETIVOS)
@@ -316,6 +329,10 @@ void menu_update_display(menu_t *menu)
         if (menu->save_subconfig == OPCION_UMBRAL)
         {
             Display7seg_show_text("umbral");
+        }
+        if (menu->save_subconfig == OPCION_MEDICION)
+        {
+            Display7seg_show_text("distancia");
         }
         break;
     case OPCION_OBJETIVOS:
@@ -330,6 +347,10 @@ void menu_update_display(menu_t *menu)
         {
             Display7seg_show_text("abajo");
         }
+        break;
+    case OPCION_MEDICION:
+        // Aqui se trae los datos del main para luego visulizarlo en esta seccion
+        Display7seg_show_number(dato_guardado_main);
         break;
     case UMBRAL_UP:
         Display7seg_show_number(menu->umbral_arriba);
@@ -358,4 +379,8 @@ bool menu_cont_str(menu_t *menu)
     bool estado_start = menu->start_contador;
     menu->start_contador = false;
     return estado_start;
+}
+void menu_read(uint16_t save_data)
+{
+    dato_guardado_main = save_data;
 }

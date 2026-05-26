@@ -2,6 +2,7 @@
 
 #include "button.h"
 // Estructura enum para el estado del sistem
+#define CANTIDAD_OPCIONES 3 // Es la cantidad de opciones que hay en modo configuracion
 typedef enum
 {
     // Modo
@@ -11,6 +12,7 @@ typedef enum
     // Opciones disponibles en Modo configuracion
     OPCION_OBJETIVOS,
     OPCION_UMBRAL,
+    OPCION_MEDICION,
     // Subopciones de la opcion UMBRAL
     UMBRAL_DOWN,
     UMBRAL_UP,
@@ -62,3 +64,5 @@ bool menu_cont_str(menu_t *menu);
 sistema_estado_t menu_get_estado(menu_t *menu);
 // Visualizador de menus
 void menu_update_display(menu_t *menu);
+// Funcion para guardar datos de la funcion principal
+void menu_read(uint16_t save_data);

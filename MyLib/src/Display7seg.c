@@ -42,7 +42,7 @@ static const uint8_t tabla_segmentos[] = {
     0x50, // R
     0x6D, // S
     0x78, // T
-    0x3E, // U
+    0x1C, // U
     0x3E, // V
     0x2A, // W
     0x76, // X
@@ -193,12 +193,6 @@ void Display7seg_show_text(const char *texto)
         display_buffer[1] = tabla_segmentos[_GUION];
         display_buffer[0] = tabla_segmentos[_GUION];
     }
-    else if (strcmp(texto, "reset") == 0)
-    {
-        display_buffer[2] = tabla_segmentos[_T];
-        display_buffer[1] = tabla_segmentos[_S];
-        display_buffer[0] = tabla_segmentos[_R];
-    }
     else if (strcmp(texto, "obj") == 0 || strcmp(texto, "objetivo") == 0)
     {
         display_buffer[2] = tabla_segmentos[_O];
@@ -220,8 +214,14 @@ void Display7seg_show_text(const char *texto)
     else if (strcmp(texto, "abajo") == 0)
     {
         display_buffer[2] = tabla_segmentos[_D];
-        display_buffer[1] = tabla_segmentos[_W];
+        display_buffer[1] = tabla_segmentos[_U];
         display_buffer[0] = tabla_segmentos[_N];
+    }
+    else if (strcmp(texto, "distancia") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_D];
+        display_buffer[1] = tabla_segmentos[_S];
+        display_buffer[0] = tabla_segmentos[_T];
     }
     // Desde aqui se muestran los frames de la primera animacion
     else if (strcmp(texto, "secuencia1") == 0)

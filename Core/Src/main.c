@@ -162,7 +162,7 @@ int main(void)
           distance = VL53L0X_GetDistance(&sensor);
           // Procesar distancia...
           contador = flexiones_actualizar(distance);
-          Display7seg_show_number(distance);
+          Display7seg_show_number(contador);
         }
       }
     }
@@ -180,6 +180,26 @@ int main(void)
     if (menu_get_estado(&menu) == OPCION_UMBRAL)
     {
       menu_update_display(&menu);
+    }
+    //===========Opcion modo medicion===============
+    if (menu_get_estado(&menu) == OPCION_MEDICION)
+    {
+      // Iniciar medición cada 25ms (más rápido que el tiempo de medición)
+      if (VL53L0X_StartMeasurementIfReady(&sensor, 25))
+      {
+        // Medición iniciada
+      }
+
+      if (VL53L0X_IsReady(&sensor))
+      {
+        if (!VL53L0X_TimeoutOccurred(&sensor))
+        {
+          menu_update_display(&menu);
+          distance = VL53L0X_GetDistance(&sensor);
+          // Display7seg_show_number(distance);
+          menu_read(distance);
+        }
+      }
     }
     //===========Umbral alto========================
     if (menu_get_estado(&menu) == UMBRAL_UP)
