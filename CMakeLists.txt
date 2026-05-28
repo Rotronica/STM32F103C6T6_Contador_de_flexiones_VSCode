@@ -45,20 +45,30 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    MyLib/src/board_init.c
-    MyLib/src/Display7seg.c
-    MyLib/src/time_ticks.c
-    MyLib/src/VL53L0X.c
-    MyLib/src/buzzer.c
-    MyLib/src/flexiones.c
-    MyLib/src/menu.c
-    MyLib/src/button.c
+    MyLib/app/flexiones/src/flexiones.c
+    MyLib/app/menu/src/menu.c
+    MyLib/modules/display7seg/src/Display7seg.c
+    MyLib/modules/buzzer/src/buzzer.c
+    MyLib/modules/VL05L0X/src/VL53L0X.c
+    MyLib/drivers/button/src/button.c
+    MyLib/drivers/config_perifericos/src/board_init.c
+    MyLib/drivers/timer_tick/src/time_ticks.c
+    MyLib/drivers/adc/src/adc.c
+    
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
-    MyLib/inc
+    MyLib/app/flexiones/inc
+    MyLib/app/menu/inc
+    MyLib/modules/display7seg/inc
+    MyLib/modules/buzzer/inc
+    MyLib/modules/VL05L0X/inc
+    MyLib/drivers/button/inc
+    MyLib/drivers/config_perifericos/inc
+    MyLib/drivers/timer_tick/inc
+    MyLib/drivers/adc/inc
 )
 
 # Add project symbols (macros)
@@ -68,6 +78,13 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
+
+# Generar archivo .hex automáticamente después de compilar
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${CMAKE_PROJECT_NAME}> $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/${CMAKE_PROJECT_NAME}.hex
+    COMMENT "Generando ${CMAKE_PROJECT_NAME}.hex"
+)
+
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
