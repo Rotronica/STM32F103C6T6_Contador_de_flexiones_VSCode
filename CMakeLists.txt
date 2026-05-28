@@ -47,13 +47,15 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     MyLib/app/flexiones/src/flexiones.c
     MyLib/app/menu/src/menu.c
+
     MyLib/modules/display7seg/src/Display7seg.c
     MyLib/modules/buzzer/src/buzzer.c
     MyLib/modules/VL05L0X/src/VL53L0X.c
+    MyLib/modules/bateria/src/bateria.c
+
     MyLib/drivers/button/src/button.c
     MyLib/drivers/config_perifericos/src/board_init.c
     MyLib/drivers/timer_tick/src/time_ticks.c
-    MyLib/drivers/adc/src/adc.c
     
 )
 
@@ -62,13 +64,15 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     MyLib/app/flexiones/inc
     MyLib/app/menu/inc
+    
     MyLib/modules/display7seg/inc
     MyLib/modules/buzzer/inc
     MyLib/modules/VL05L0X/inc
+    MyLib/modules/bateria/inc
+
     MyLib/drivers/button/inc
     MyLib/drivers/config_perifericos/inc
     MyLib/drivers/timer_tick/inc
-    MyLib/drivers/adc/inc
 )
 
 # Add project symbols (macros)

@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "i2c.h"
 #include "tim.h"
 #include "gpio.h"
@@ -32,6 +33,7 @@
 #include "flexiones.h"
 #include "button.h"
 #include "menu.h"
+#include "bateria.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,6 +54,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
 /* USER CODE BEGIN PV */
 static button_handle_t btn_start, btn_up, btn_down, btn_reset;
 
@@ -61,6 +64,7 @@ static button_handle_t btn_start, btn_up, btn_down, btn_reset;
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void crear_botones(void);
+void config_bateria(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -99,11 +103,15 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_I2C1_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2); // Activa la interrupcion del TMR2
   hardware_init();               // inicializa los pines display,buzzer y button
   buzzer_init();
   flexiones_init();
+  // Inicializar la medicion de baterias
+  config_bateria();
+  battery_status_t bat_status;
   Display7seg_init();
 
   // Inicializar botones
@@ -132,14 +140,35 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    Display7seg_refresh(); // Multiplexado del display
-    button_update_all();   // Actualizar estado de botones
-    buzzer_update();       // Actualizar estado del buzzer
-    menu_update(&menu);    // Actualizar lógica del menú
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+    Display7seg_refresh();       // Multiplexado del display
+    button_update_all();         // Actualizar estado de botones
+    buzzer_update();             // Actualizar estado del buzzer
+    menu_update(&menu);          // Actualizar lógica del menú
+    battery_update(&bat_status); // Actualiza el estado de la bateria
+
     //=====================Modo espera======================
     if (menu_get_estado(&menu) == MODO_ESPERA)
     {
-      menu_update_display(&menu);
+      // menu_update_display(&menu);
+
+      // Mostrar porcentaje en display
+      Display7seg_show_number(battery_get_percentage());
+      // if (battery_is_low())
+      //{
+      // buzzer_start(50);
+      //}
+      if (battery_is_critical() && !buzzer_alarm_is_active())
+      {
+        buzzer_alarm_start(500, 4, 10000);
+      }
+      // Cuando la batería vuelve a nivel normal
+      if (!battery_is_critical() && buzzer_alarm_is_active())
+      {
+        buzzer_alarm_stop();
+      }
     }
     //===================Modo conteo========================
     if (menu_get_estado(&menu) == MODO_CONTEO)
@@ -211,10 +240,10 @@ int main(void)
     {
       menu_update_display(&menu);
     }
-
-    /* USER CODE END 3 */
   }
+  /* USER CODE END 3 */
 }
+
 /**
  * @brief System Clock Configuration
  * @retval None
@@ -223,6 +252,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
    * in the RCC_OscInitTypeDef structure.
@@ -248,6 +278,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
@@ -296,6 +332,18 @@ void crear_botones(void)
       .long_press_ms = 1000,
   };
   btn_reset = button_create(&btn_rst);
+}
+// Funcion para configurar la inicializacion de la medicion de la bateria
+void config_bateria(void)
+{
+  battery_config_t cfg_battery = {
+      .voltaje_max = 8.40f,        // 4.2V × 2 (totalmente cargada)
+      .voltaje_min = 6.0f,         // 3.0V × 2 (totalmente vacía)
+      .voltaje_advertencia = 6.6f, // Advertencia de batería baja
+      .divisor_tension = 2.55f,    // Ajustar según el divisor (ej: (10k+5.6k)/5.6k)
+  };
+  // En la inicialización
+  battery_init(&cfg_battery);
 }
 /* USER CODE END 4 */
 

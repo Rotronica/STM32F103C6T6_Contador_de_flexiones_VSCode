@@ -1,10 +1,17 @@
-#pragma once
+#ifndef BUZZER_H
+#define BUZZER_H
+
 #include <stdint.h>
-// Inicializamos pines
+#include <stdbool.h>
+
 void buzzer_init(void);
-// Cuando quieras activar el buzzer (ej: al completar una flexión)
-void buzzer_start(uint16_t tiempo_ms);
-// Tooggle_Buzzer
-// void buzzer_toogle(uint16_t tiempo_ms);
-// En el main loop (llamar MUY frecuente) es el que apaga el sonido
-void buzzer_update(void);
+void buzzer_start(uint16_t tiempo_ms); // Pitido único
+void buzzer_stop(void);                // Apagar inmediato
+void buzzer_update(void);              // Actualizar (llamar frecuentemente)
+
+// Nueva función para pitidos intermitentes (alarma de batería baja)
+void buzzer_alarm_start(uint16_t duracion_pitido_ms, uint8_t pitidos_por_ciclo, uint16_t intervalo_entre_ciclos_ms);
+void buzzer_alarm_stop(void);
+bool buzzer_alarm_is_active(void);
+
+#endif
