@@ -43,9 +43,22 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+//==Configuracion del estado para hacer flexiones=================
 #define UMBRAL_ALTO 250
 #define UMBRAL_BAJO 70
 #define OBJETIVO_FLEXIONES 15
+//================================================================
+
+//=======Tiempos para avisar baja bateria por buzzer===============
+#define TIEMPO_DE_PITIDO_LOW 500         // Tiempo del pitido
+#define CICLOS_DE_PITIDOS_LOW 3          // Un pitido sonara 3 veces y luego se apaga
+#define TIEMPO_DE_ADVERTENCIA_LOW 180000 // Cada 3 minutos aparecera el pitido
+//================================================================
+
+//=======Tiempos para avisar bateria critica con buzzer
+#define TIEMPO_DE_PITIDO_WARNING 500        // Tiempo del pitido
+#define CICLOS_DE_PITIDOS_WARNING 4         // Un pitido sonara 4 veces y luego se apaga
+#define TIEMPO_DE_ADVERTENCIA_WARNING 60000 // Cada minuto aparecera el pitido
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -63,8 +76,10 @@ static button_handle_t btn_start, btn_up, btn_down, btn_reset;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void crear_botones(void);
-void config_bateria(void);
+void crear_botones(void);      // Funcion creada para configurar cada boton
+void config_bateria(void);     // Configuracion de las condiciones de la bateria
+void monitorear_bateria(void); // Funcion para monitorear las baterias
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -148,27 +163,11 @@ int main(void)
     buzzer_update();             // Actualizar estado del buzzer
     menu_update(&menu);          // Actualizar lógica del menú
     battery_update(&bat_status); // Actualiza el estado de la bateria
-
+    // monitorear_bateria();        // Monitorear siempre la bateria
     //=====================Modo espera======================
     if (menu_get_estado(&menu) == MODO_ESPERA)
     {
-      // menu_update_display(&menu);
-
-      // Mostrar porcentaje en display
-      Display7seg_show_number(battery_get_percentage());
-      // if (battery_is_low())
-      //{
-      // buzzer_start(50);
-      //}
-      if (battery_is_critical() && !buzzer_alarm_is_active())
-      {
-        buzzer_alarm_start(500, 4, 10000);
-      }
-      // Cuando la batería vuelve a nivel normal
-      if (!battery_is_critical() && buzzer_alarm_is_active())
-      {
-        buzzer_alarm_stop();
-      }
+      menu_update_display(&menu);
     }
     //===================Modo conteo========================
     if (menu_get_estado(&menu) == MODO_CONTEO)
@@ -194,6 +193,11 @@ int main(void)
           Display7seg_show_number(contador);
         }
       }
+    }
+    //===========Estado de la bateria======================
+    if (menu_get_estado(&menu) == ESTADO_BATERIA)
+    {
+      menu_update_display(&menu);
     }
     //===========Modo configuracion========================
     if (menu_get_estado(&menu) == MODO_CONFIGURACION)
@@ -344,6 +348,33 @@ void config_bateria(void)
   };
   // En la inicialización
   battery_init(&cfg_battery);
+}
+
+// Funcion para monitorear siempre la bateria para luego avisarte
+void monitorear_bateria(void)
+{
+  //========Aviso estado critico de la bateria================
+  if (battery_is_critical() && !buzzer_alarm_is_active())
+  {
+    buzzer_alarm_start(TIEMPO_DE_PITIDO_WARNING,
+                       CICLOS_DE_PITIDOS_WARNING,
+                       TIEMPO_DE_ADVERTENCIA_WARNING);
+  }
+  //===========================================================
+
+  //==========Aviso estodo bajo de la bateria==================
+  /*if (battery_is_low() && !buzzer_alarm_is_active())
+  {
+    buzzer_alarm_start(TIEMPO_DE_PITIDO_LOW,
+                       CICLOS_DE_PITIDOS_LOW,
+                       TIEMPO_DE_ADVERTENCIA_LOW);
+  }*/
+  //===========================================================
+  // Cuando la batería vuelve a nivel normal
+  if (!battery_is_critical() && buzzer_alarm_is_active())
+  {
+    buzzer_alarm_stop();
+  }
 }
 /* USER CODE END 4 */
 

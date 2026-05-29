@@ -3,6 +3,15 @@
 #include "button.h"
 // Estructura enum para el estado del sistem
 #define CANTIDAD_OPCIONES 3 // Es la cantidad de opciones que hay en modo configuracion
+
+//=====Para los pitidos tooggle=====
+#define NUM_PITIDOS 2
+#define TIEMPO_PITIDOS 80
+#define PAUSA_PITIDOS 120
+//==================================
+
+//===Tiempo de pitido para reset ===
+#define RESET_BUZZER_TIME 200
 typedef enum
 {
     // Modo
@@ -16,6 +25,14 @@ typedef enum
     // Subopciones de la opcion UMBRAL
     UMBRAL_DOWN,
     UMBRAL_UP,
+    // Ver estado de la bateria
+    ESTADO_BATERIA,
+    // Aceptar configuraciones
+    ACEPTAR_CONFIG,
+    // mensaje CONFIGUURACIONES
+    MSG_CONFIG,
+    // Mensaje bateria
+    MS_BATERIA,
 } sistema_estado_t;
 
 // Atributos para el menu sera utilizado para guardar las configuracion

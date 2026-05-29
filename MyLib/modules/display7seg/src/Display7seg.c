@@ -223,6 +223,24 @@ void Display7seg_show_text(const char *texto)
         display_buffer[1] = tabla_segmentos[_S];
         display_buffer[0] = tabla_segmentos[_T];
     }
+    else if (strcmp(texto, "set") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_S];
+        display_buffer[1] = tabla_segmentos[_E];
+        display_buffer[0] = tabla_segmentos[_T];
+    }
+    else if (strcmp(texto, "config") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_C];
+        display_buffer[1] = tabla_segmentos[_F];
+        display_buffer[0] = tabla_segmentos[_G];
+    }
+    else if (strcmp(texto, "bateria") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_B];
+        display_buffer[1] = tabla_segmentos[_A];
+        display_buffer[0] = tabla_segmentos[_T];
+    }
     // Desde aqui se muestran los frames de la primera animacion
     else if (strcmp(texto, "secuencia1") == 0)
     {

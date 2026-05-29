@@ -3,9 +3,12 @@
 #include "buzzer.h"
 #include "Display7seg.h"
 #include "flexiones.h"
+#include "bateria.h"
+
 #define NUM_FRAMES 14
 
 uint16_t dato_guardado_main = 0;
+uint8_t varible_aux_estado = 0; // esta es una varible que permite guardar el estado del menu
 void menu_init(menu_t *menu,
                button_handle_t btn_start,
                button_handle_t btn_up,
@@ -65,11 +68,21 @@ void menu_update(menu_t *menu)
             menu->start_contador = true;
             buzzer_start(100);
         }
+        // Ver el estado de la bateria
+        if (button_released(menu->btn_up))
+        {
+            menu->estado = ESTADO_BATERIA;
+            varible_aux_estado = menu->estado;
+            menu->estado = MS_BATERIA;
+            buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
+        }
         // Se presiono largo tiempo ingresa a modo configuracion
         if (button_long_pressed(menu->btn_start))
         {
             menu->estado = MODO_CONFIGURACION;
-            buzzer_start(300);
+            varible_aux_estado = menu->estado;
+            menu->estado = MSG_CONFIG;
+            buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
         }
 
         break;
@@ -87,6 +100,14 @@ void menu_update(menu_t *menu)
             menu->estado = MODO_ESPERA;
         }
 
+        break;
+    case ESTADO_BATERIA:
+        // ir atras, se tiene que presionar unos segundos mas
+        if (button_long_pressed(menu->btn_reset))
+        {
+            buzzer_start(300);
+            menu->estado = MODO_ESPERA;
+        }
         break;
     case MODO_CONFIGURACION:
         // Aqui se puede manipular btn up y down y navegar entre ociones
@@ -132,7 +153,7 @@ void menu_update(menu_t *menu)
         // ir atras, se tiene que presionar unos segundos mas
         if (button_long_pressed(menu->btn_reset))
         {
-            buzzer_start(300);
+            buzzer_start(RESET_BUZZER_TIME);
             menu->estado = MODO_ESPERA;
             menu->save_subconfig = OPCION_OBJETIVOS;
             opciones = 1; // Variable de seleccion Condicion incial de las opciones Se coloca a OPCION_OBJETIVOS
@@ -152,13 +173,15 @@ void menu_update(menu_t *menu)
         // Guardar objetivos configuraciones
         if (button_long_pressed(menu->btn_start))
         {
-            buzzer_start(300);
+            varible_aux_estado = MODO_CONFIGURACION; // variable auxiliar
+            menu->estado = ACEPTAR_CONFIG;
+            buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
             flexiones_set_objetivo(menu->objetivo);
         }
         // Reset
         if (button_long_pressed(menu->btn_reset))
         {
-            buzzer_start(200);
+            buzzer_start(RESET_BUZZER_TIME);
             menu->estado = MODO_ESPERA;
             menu->save_subconfig = OPCION_OBJETIVOS;
         }
@@ -185,7 +208,7 @@ void menu_update(menu_t *menu)
         // Reset
         if (button_long_pressed(menu->btn_reset))
         {
-            buzzer_start(200);
+            buzzer_start(RESET_BUZZER_TIME);
             menu->estado = MODO_ESPERA;
             menu->save_subconfig = OPCION_OBJETIVOS;
             menu->save_umbrales = UMBRAL_UP;
@@ -196,7 +219,7 @@ void menu_update(menu_t *menu)
         // Reset
         if (button_long_pressed(menu->btn_reset))
         {
-            buzzer_start(200);
+            buzzer_start(RESET_BUZZER_TIME);
             menu->estado = MODO_ESPERA;
             menu->save_subconfig = OPCION_OBJETIVOS;
             menu->save_umbrales = UMBRAL_UP;
@@ -217,7 +240,9 @@ void menu_update(menu_t *menu)
         // Guardar configuuracion
         if (button_long_pressed(menu->btn_start))
         {
-            buzzer_start(300);
+            varible_aux_estado = OPCION_UMBRAL; // variable auxiliar
+            menu->estado = ACEPTAR_CONFIG;
+            buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
             flexion_umbral_alto(menu->umbral_arriba);
         }
         // Reset
@@ -253,8 +278,62 @@ void menu_update(menu_t *menu)
         // Guardar configuuracion
         if (button_long_pressed(menu->btn_start))
         {
-            buzzer_start(300);
+            varible_aux_estado = OPCION_UMBRAL; // variable auxiliar
+            menu->estado = ACEPTAR_CONFIG;
+            buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
             flexion_umbral_bajo(menu->umbral_abajo);
+        }
+        break;
+        //=========== Mensajes eventuales y cortos=========================
+    case ACEPTAR_CONFIG:
+        static uint32_t start_time = 0;
+        static bool iniciado = false;
+
+        if (!iniciado)
+        { // ← SOLO LA PRIMERA VEZ
+            iniciado = true;
+            start_time = millis(); // ← CAPTURA EL MOMENTO
+            Display7seg_show_text("set");
+        }
+
+        if ((millis() - start_time) >= 1000)
+        { // ← COMPARA CON EL MOMENTO CAPTURADO
+            menu->estado = varible_aux_estado;
+            iniciado = false; // ← RESETEA PARA LA PRÓXIMA VEZ
+        }
+        break;
+    case MSG_CONFIG:
+        static uint32_t start_timer = 0;
+        static bool iniciar = false;
+
+        if (!iniciar)
+        { // ← SOLO LA PRIMERA VEZ
+            iniciar = true;
+            start_timer = millis(); // ← CAPTURA EL MOMENTO
+            Display7seg_show_text("config");
+        }
+
+        if ((millis() - start_timer) >= 1000)
+        { // ← COMPARA CON EL MOMENTO CAPTURADO
+            menu->estado = varible_aux_estado;
+            iniciar = false; // ← RESETEA PARA LA PRÓXIMA VEZ
+        }
+        break;
+    case MS_BATERIA:
+        static uint32_t start_time_3 = 0;
+        static bool iniciar_3 = false;
+
+        if (!iniciar_3)
+        { // ← SOLO LA PRIMERA VEZ
+            iniciar_3 = true;
+            start_time_3 = millis(); // ← CAPTURA EL MOMENTO
+            Display7seg_show_text("bateria");
+        }
+
+        if ((millis() - start_time_3) >= 1000)
+        { // ← COMPARA CON EL MOMENTO CAPTURADO
+            menu->estado = varible_aux_estado;
+            iniciar_3 = false; // ← RESETEA PARA LA PRÓXIMA VEZ
         }
         break;
     default:
@@ -320,6 +399,9 @@ void menu_update_display(menu_t *menu)
         break;
     case MODO_CONTEO:
         // Aqui entra la visualizacion para el contador pero se lo hace en el main
+        break;
+    case ESTADO_BATERIA:
+        Display7seg_show_number(battery_get_percentage());
         break;
     case MODO_CONFIGURACION:
         if (menu->save_subconfig == OPCION_OBJETIVOS)
