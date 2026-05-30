@@ -50,14 +50,14 @@
 //================================================================
 
 //=======Tiempos para avisar baja bateria por buzzer===============
-#define TIEMPO_DE_PITIDO_LOW 500         // Tiempo del pitido
-#define CICLOS_DE_PITIDOS_LOW 2          // Un pitido sonara 3 veces y luego se apaga
+#define TIEMPO_DE_PITIDO_LOW 70          // Tiempo del pitido
+#define CICLOS_DE_PITIDOS_LOW 5          // Un pitido sonara 3 veces y luego se apaga
 #define TIEMPO_DE_ADVERTENCIA_LOW 180000 // Cada 3 minutos aparecera el pitido
 //================================================================
 
 //=======Tiempos para avisar bateria critica con buzzer
-#define TIEMPO_DE_PITIDO_WARNING 500        // Tiempo del pitido
-#define CICLOS_DE_PITIDOS_WARNING 5         // Un pitido sonara 4 veces y luego se apaga
+#define TIEMPO_DE_PITIDO_WARNING 70         // Tiempo del pitido
+#define CICLOS_DE_PITIDOS_WARNING 8         // Un pitido sonara 4 veces y luego se apaga
 #define TIEMPO_DE_ADVERTENCIA_WARNING 60000 // Cada minuto aparecera el pitido
 /* USER CODE END PD */
 

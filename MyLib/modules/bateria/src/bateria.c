@@ -30,7 +30,7 @@ void battery_update(battery_status_t *status_out)
     uint32_t ahora = millis();
 
     // Leer cada 1 segundo (no más frecuente)
-    if (ahora - last_read_time < 1000)
+    if (ahora - last_read_time < 500)
     {
         if (status_out)
             *status_out = battery_status;

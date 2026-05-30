@@ -90,7 +90,8 @@ void menu_update(menu_t *menu)
         if (button_released(menu->btn_reset))
         {
             buzzer_start(100);
-            menu->reset_contador = true;
+            // menu->reset_contador = true;
+            flexiones_cont_reset();
         }
         // ir atras, se tien que presionar unos segundos mas
         if (button_long_pressed(menu->btn_reset))
@@ -238,7 +239,7 @@ void menu_update(menu_t *menu)
             buzzer_start(100);
             menu->umbral_arriba++;
         }
-        if (button_pressed(menu->btn_down) && menu->umbral_arriba > 5)
+        if (button_pressed(menu->btn_down) && menu->umbral_arriba > 25)
         {
             buzzer_start(100);
             menu->umbral_arriba--;
