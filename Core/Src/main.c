@@ -51,13 +51,13 @@
 
 //=======Tiempos para avisar baja bateria por buzzer===============
 #define TIEMPO_DE_PITIDO_LOW 500         // Tiempo del pitido
-#define CICLOS_DE_PITIDOS_LOW 3          // Un pitido sonara 3 veces y luego se apaga
+#define CICLOS_DE_PITIDOS_LOW 2          // Un pitido sonara 3 veces y luego se apaga
 #define TIEMPO_DE_ADVERTENCIA_LOW 180000 // Cada 3 minutos aparecera el pitido
 //================================================================
 
 //=======Tiempos para avisar bateria critica con buzzer
 #define TIEMPO_DE_PITIDO_WARNING 500        // Tiempo del pitido
-#define CICLOS_DE_PITIDOS_WARNING 4         // Un pitido sonara 4 veces y luego se apaga
+#define CICLOS_DE_PITIDOS_WARNING 5         // Un pitido sonara 4 veces y luego se apaga
 #define TIEMPO_DE_ADVERTENCIA_WARNING 60000 // Cada minuto aparecera el pitido
 /* USER CODE END PD */
 
@@ -163,7 +163,7 @@ int main(void)
     buzzer_update();             // Actualizar estado del buzzer
     menu_update(&menu);          // Actualizar lógica del menú
     battery_update(&bat_status); // Actualiza el estado de la bateria
-    // monitorear_bateria();        // Monitorear siempre la bateria
+    monitorear_bateria();        // Monitorear siempre la bateria
     //=====================Modo espera======================
     if (menu_get_estado(&menu) == MODO_ESPERA)
     {
@@ -343,37 +343,78 @@ void config_bateria(void)
   battery_config_t cfg_battery = {
       .voltaje_max = 8.40f,        // 4.2V × 2 (totalmente cargada)
       .voltaje_min = 6.0f,         // 3.0V × 2 (totalmente vacía)
-      .voltaje_advertencia = 6.6f, // Advertencia de batería baja
+      .voltaje_advertencia = 6.9f, // Advertencia de batería baja
+      .voltaje_critico = 6.6f,     // 6.6V (crítica)
       .divisor_tension = 2.55f,    // Ajustar según el divisor (ej: (10k+5.6k)/5.6k)
   };
   // En la inicialización
   battery_init(&cfg_battery);
 }
 
-// Funcion para monitorear siempre la bateria para luego avisarte
 void monitorear_bateria(void)
 {
-  //========Aviso estado critico de la bateria================
-  if (battery_is_critical() && !buzzer_alarm_is_active())
-  {
-    buzzer_alarm_start(TIEMPO_DE_PITIDO_WARNING,
-                       CICLOS_DE_PITIDOS_WARNING,
-                       TIEMPO_DE_ADVERTENCIA_WARNING);
-  }
-  //===========================================================
+  static uint32_t last_alert_critical = 0;
+  static uint32_t last_alert_low = 0;
+  static bool primera_critical = true;
+  static bool primera_low = true;
+  uint32_t ahora = millis();
 
-  //==========Aviso estodo bajo de la bateria==================
-  /*if (battery_is_low() && !buzzer_alarm_is_active())
+  // ========= Batería CRÍTICA (más urgente) =========
+  if (battery_is_critical())
   {
-    buzzer_alarm_start(TIEMPO_DE_PITIDO_LOW,
-                       CICLOS_DE_PITIDOS_LOW,
-                       TIEMPO_DE_ADVERTENCIA_LOW);
-  }*/
-  //===========================================================
-  // Cuando la batería vuelve a nivel normal
-  if (!battery_is_critical() && buzzer_alarm_is_active())
+    // PRIMERA ALERTA: inmediata
+    if (primera_critical)
+    {
+      primera_critical = false;
+      last_alert_critical = ahora;
+      buzzer_alarm_start(TIEMPO_DE_PITIDO_WARNING,
+                         CICLOS_DE_PITIDOS_WARNING,
+                         TIEMPO_DE_ADVERTENCIA_WARNING);
+    }
+    // ALERTAS SIGUIENTES: cada TIEMPO_DE_ADVERTENCIA_WARNING
+    else if (ahora - last_alert_critical >= TIEMPO_DE_ADVERTENCIA_WARNING)
+    {
+      last_alert_critical = ahora;
+      buzzer_alarm_start(TIEMPO_DE_PITIDO_WARNING,
+                         CICLOS_DE_PITIDOS_WARNING,
+                         TIEMPO_DE_ADVERTENCIA_WARNING);
+    }
+  }
+  // ========= Batería BAJA (menos urgente) =========
+  else if (battery_is_low())
   {
-    buzzer_alarm_stop();
+    primera_critical = true; // Resetear para cuando vuelva a crítica
+
+    // PRIMERA ALERTA: inmediata
+    if (primera_low)
+    {
+      primera_low = false;
+      last_alert_low = ahora;
+      buzzer_alarm_start(TIEMPO_DE_PITIDO_LOW,
+                         CICLOS_DE_PITIDOS_LOW,
+                         TIEMPO_DE_ADVERTENCIA_LOW);
+    }
+    // ALERTAS SIGUIENTES: cada TIEMPO_DE_ADVERTENCIA_LOW
+    else if (ahora - last_alert_low >= TIEMPO_DE_ADVERTENCIA_LOW)
+    {
+      last_alert_low = ahora;
+      buzzer_alarm_start(TIEMPO_DE_PITIDO_LOW,
+                         CICLOS_DE_PITIDOS_LOW,
+                         TIEMPO_DE_ADVERTENCIA_LOW);
+    }
+  }
+  // ========= Batería NORMAL =========
+  else
+  {
+    // Resetear todo cuando la batería se recupera
+    primera_critical = true;
+    primera_low = true;
+    last_alert_critical = 0;
+    last_alert_low = 0;
+    if (buzzer_alarm_is_active())
+    {
+      buzzer_alarm_stop();
+    }
   }
 }
 /* USER CODE END 4 */

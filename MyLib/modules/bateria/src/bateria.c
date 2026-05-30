@@ -13,6 +13,7 @@ void battery_init(battery_config_t *config)
     battery_config.voltaje_max = config->voltaje_max;
     battery_config.voltaje_min = config->voltaje_min;
     battery_config.voltaje_advertencia = config->voltaje_advertencia;
+    battery_config.voltaje_critico = config->voltaje_critico;
     battery_config.divisor_tension = config->divisor_tension;
 
     // Inicializacion del estado de la bateria
@@ -66,8 +67,9 @@ void battery_update(battery_status_t *status_out)
         }
 
         // Detectar niveles
-        battery_status.bateria_baja = (battery_status.voltaje_bateria < battery_config.voltaje_advertencia);
-        battery_status.bateria_critica = (battery_status.voltaje_bateria < battery_config.voltaje_min);
+        battery_status.bateria_baja = (battery_status.voltaje_bateria < battery_config.voltaje_advertencia) &&
+                                      (battery_status.voltaje_bateria >= battery_config.voltaje_critico);
+        battery_status.bateria_critica = (battery_status.voltaje_bateria < battery_config.voltaje_critico);
     }
 
     HAL_ADC_Stop(&hadc1);

@@ -9,6 +9,7 @@ typedef struct
     float voltaje_max;         // 8.4V para 2S
     float voltaje_min;         // 6.0V para 2S
     float voltaje_advertencia; // 6.6V
+    float voltaje_critico;     // 6.6V (crítica) ← NUEVO
     float divisor_tension;     // (R1+R2)/R2 del divisor de tensión
 } battery_config_t;
 

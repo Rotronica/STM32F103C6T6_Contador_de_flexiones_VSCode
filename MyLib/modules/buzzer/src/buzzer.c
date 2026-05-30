@@ -83,8 +83,7 @@ void buzzer_seq_update(void)
 void buzzer_start(uint16_t tiempo_ms)
 {
     // Detener cualquier alarma activa
-    buzzer_alarm_stop();
-
+    // buzzer_alarm_stop();//Se comento por problemas de choque con el pitido de alarma de bateria y pitidos unicos
     pitido_activo = true;
     pitido_fin_time = millis() + tiempo_ms;
     HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_SET);
