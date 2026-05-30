@@ -33,6 +33,8 @@ typedef enum
     MSG_CONFIG,
     // Mensaje bateria
     MS_BATERIA,
+    // Mensaje contador
+    MS_FLEXION,
 } sistema_estado_t;
 
 // Atributos para el menu sera utilizado para guardar las configuracion
@@ -46,6 +48,8 @@ typedef struct
 
     // Estado
     sistema_estado_t estado;
+    uint8_t estado_anterior; // esta es una varible que permite guardar el estado del menu
+
     // Activa la configuraciones secundarias
     uint8_t save_subconfig; // Guarda las subopciones
     uint8_t save_umbrales;  // Guarda el tipo de umbral elegido

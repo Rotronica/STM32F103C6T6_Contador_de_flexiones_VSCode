@@ -241,6 +241,12 @@ void Display7seg_show_text(const char *texto)
         display_buffer[1] = tabla_segmentos[_A];
         display_buffer[0] = tabla_segmentos[_T];
     }
+    else if (strcmp(texto, "flexiones") == 0)
+    {
+        display_buffer[2] = tabla_segmentos[_F];
+        display_buffer[1] = tabla_segmentos[_L];
+        display_buffer[0] = tabla_segmentos[_X];
+    }
     // Desde aqui se muestran los frames de la primera animacion
     else if (strcmp(texto, "secuencia1") == 0)
     {

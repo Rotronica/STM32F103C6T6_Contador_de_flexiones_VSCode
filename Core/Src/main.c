@@ -173,10 +173,10 @@ int main(void)
     if (menu_get_estado(&menu) == MODO_CONTEO)
     {
       // Verificar reset solicitado por el menú
-      if (menu_cont_rst(&menu))
-      {
-        flexiones_cont_reset();
-      }
+      // if (menu_cont_rst(&menu))
+      //{
+      // flexiones_cont_reset();
+      //}
       // Iniciar medición cada 25ms (más rápido que el tiempo de medición)
       if (VL53L0X_StartMeasurementIfReady(&sensor, 25))
       {

@@ -8,7 +8,6 @@
 #define NUM_FRAMES 14
 
 uint16_t dato_guardado_main = 0;
-uint8_t varible_aux_estado = 0; // esta es una varible que permite guardar el estado del menu
 void menu_init(menu_t *menu,
                button_handle_t btn_start,
                button_handle_t btn_up,
@@ -25,6 +24,7 @@ void menu_init(menu_t *menu,
     menu->btn_down = btn_down;
     // Guardar estado
     menu->estado = MODO_ESPERA;
+    menu->estado_anterior = MODO_ESPERA; // Variable auxiliar par guardar el estado anterior
 
     // Activa configuracion secundarias
     menu->save_subconfig = OPCION_OBJETIVOS;
@@ -64,23 +64,22 @@ void menu_update(menu_t *menu)
         // Empezar modo contador
         if (button_released(menu->btn_start))
         {
-            menu->estado = MODO_CONTEO;
+            menu->estado_anterior = MODO_CONTEO; // ← Guardar
+            menu->estado = MS_FLEXION;
             menu->start_contador = true;
-            buzzer_start(100);
+            buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
         }
         // Ver el estado de la bateria
         if (button_released(menu->btn_up))
         {
-            menu->estado = ESTADO_BATERIA;
-            varible_aux_estado = menu->estado;
+            menu->estado_anterior = ESTADO_BATERIA; // ← Guardar
             menu->estado = MS_BATERIA;
             buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
         }
         // Se presiono largo tiempo ingresa a modo configuracion
         if (button_long_pressed(menu->btn_start))
         {
-            menu->estado = MODO_CONFIGURACION;
-            varible_aux_estado = menu->estado;
+            menu->estado_anterior = MODO_CONFIGURACION; // ← Guardar
             menu->estado = MSG_CONFIG;
             buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
         }
@@ -98,6 +97,10 @@ void menu_update(menu_t *menu)
         {
             buzzer_start(300);
             menu->estado = MODO_ESPERA;
+            // 🔧 LIMPIAR FLAGS DEL BOTÓN START
+            // Forzar la lectura del flag para limpiarlo
+            button_long_pressed(menu->btn_start); // ← Lee y limpia
+            button_pressed(menu->btn_start);      // ← Lee y limpia
         }
 
         break;
@@ -107,6 +110,9 @@ void menu_update(menu_t *menu)
         {
             buzzer_start(300);
             menu->estado = MODO_ESPERA;
+            // 🔧 LIMPIAR FLAGS DEL BOTÓN START
+            button_long_pressed(menu->btn_start); // ← Lee y limpia
+            button_pressed(menu->btn_start);      // ← Lee y limpia
         }
         break;
     case MODO_CONFIGURACION:
@@ -173,7 +179,7 @@ void menu_update(menu_t *menu)
         // Guardar objetivos configuraciones
         if (button_long_pressed(menu->btn_start))
         {
-            varible_aux_estado = MODO_CONFIGURACION; // variable auxiliar
+            menu->estado_anterior = MODO_CONFIGURACION; // variable auxiliar
             menu->estado = ACEPTAR_CONFIG;
             buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
             flexiones_set_objetivo(menu->objetivo);
@@ -240,7 +246,7 @@ void menu_update(menu_t *menu)
         // Guardar configuuracion
         if (button_long_pressed(menu->btn_start))
         {
-            varible_aux_estado = OPCION_UMBRAL; // variable auxiliar
+            menu->estado_anterior = OPCION_UMBRAL; // variable auxiliar
             menu->estado = ACEPTAR_CONFIG;
             buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
             flexion_umbral_alto(menu->umbral_arriba);
@@ -278,13 +284,14 @@ void menu_update(menu_t *menu)
         // Guardar configuuracion
         if (button_long_pressed(menu->btn_start))
         {
-            varible_aux_estado = OPCION_UMBRAL; // variable auxiliar
+            menu->estado_anterior = OPCION_UMBRAL; // variable auxiliar
             menu->estado = ACEPTAR_CONFIG;
             buzzer_seq_start(NUM_PITIDOS, TIEMPO_PITIDOS, PAUSA_PITIDOS);
             flexion_umbral_bajo(menu->umbral_abajo);
         }
         break;
         //=========== Mensajes eventuales y cortos=========================
+        //=================================================================
     case ACEPTAR_CONFIG:
         static uint32_t start_time = 0;
         static bool iniciado = false;
@@ -297,9 +304,9 @@ void menu_update(menu_t *menu)
         }
 
         if ((millis() - start_time) >= 1000)
-        { // ← COMPARA CON EL MOMENTO CAPTURADO
-            menu->estado = varible_aux_estado;
-            iniciado = false; // ← RESETEA PARA LA PRÓXIMA VEZ
+        {                                         // ← COMPARA CON EL MOMENTO CAPTURADO
+            menu->estado = menu->estado_anterior; // ← Usar el guardado, no variable global
+            iniciado = false;                     // ← RESETEA PARA LA PRÓXIMA VEZ
         }
         break;
     case MSG_CONFIG:
@@ -314,9 +321,9 @@ void menu_update(menu_t *menu)
         }
 
         if ((millis() - start_timer) >= 1000)
-        { // ← COMPARA CON EL MOMENTO CAPTURADO
-            menu->estado = varible_aux_estado;
-            iniciar = false; // ← RESETEA PARA LA PRÓXIMA VEZ
+        {                                         // ← COMPARA CON EL MOMENTO CAPTURADO
+            menu->estado = menu->estado_anterior; // ← Usar el guardado, no variable global
+            iniciar = false;                      // ← RESETEA PARA LA PRÓXIMA VEZ
         }
         break;
     case MS_BATERIA:
@@ -331,9 +338,26 @@ void menu_update(menu_t *menu)
         }
 
         if ((millis() - start_time_3) >= 1000)
-        { // ← COMPARA CON EL MOMENTO CAPTURADO
-            menu->estado = varible_aux_estado;
-            iniciar_3 = false; // ← RESETEA PARA LA PRÓXIMA VEZ
+        {                                         // ← COMPARA CON EL MOMENTO CAPTURADO
+            menu->estado = menu->estado_anterior; // ← Usar el guardado, no variable global
+            iniciar_3 = false;                    // ← RESETEA PARA LA PRÓXIMA VEZ
+        }
+        break;
+    case MS_FLEXION:
+        static uint32_t start_time_4 = 0;
+        static bool iniciar_4 = false;
+
+        if (!iniciar_4)
+        { // ← SOLO LA PRIMERA VEZ
+            iniciar_4 = true;
+            start_time_4 = millis(); // ← CAPTURA EL MOMENTO
+            Display7seg_show_text("flexiones");
+        }
+
+        if ((millis() - start_time_4) >= 1000)
+        {                                         // ← COMPARA CON EL MOMENTO CAPTURADO
+            menu->estado = menu->estado_anterior; // ← Usar el guardado, no variable global
+            iniciar_4 = false;                    // ← RESETEA PARA LA PRÓXIMA VEZ
         }
         break;
     default:
